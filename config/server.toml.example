@@ -1,0 +1,54 @@
+# Пример конфигурации LLP Server
+# Скопируйте в server.toml и отредактируйте под свои нужды
+
+[network]
+# IP адрес для прослушивания (0.0.0.0 = все интерфейсы)
+bind_ip = "0.0.0.0"
+
+# Порт для прослушивания
+port = 8443
+
+# Максимальное количество одновременных подключений
+max_connections = 1000
+
+# Таймаут для установления соединения (секунды)
+connection_timeout_secs = 30
+
+[vpn]
+# Подсеть для VPN клиентов
+subnet = "10.8.0.0/24"
+
+# IP адрес сервера в VPN подсети
+server_ip = "10.8.0.1"
+
+# DNS серверы для клиентов
+dns_servers = ["8.8.8.8", "1.1.1.1"]
+
+# MTU для VPN интерфейса
+mtu = 1420
+
+[security]
+# Профиль мимикрии: none, vk_video, yandex_music, rutube
+default_mimicry_profile = "vk_video"
+
+# Время жизни сессии (секунды) - 24 часа
+session_lifetime_secs = 86400
+
+# Интервал keepalive (секунды)
+keepalive_interval_secs = 30
+
+# Таймаут keepalive (секунды)
+keepalive_timeout_secs = 90
+
+# Максимальный drift времени (секунды)
+max_timestamp_drift_secs = 300
+
+[logging]
+# Уровень логирования: trace, debug, info, warn, error
+level = "info"
+
+# Логировать в файл
+log_to_file = true
+
+# Путь к файлу логов
+log_file_path = "/var/log/llp-server.log"

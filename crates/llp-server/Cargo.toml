@@ -1,0 +1,49 @@
+[package]
+name = "llp-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "llp-server"
+path = "src/main.rs"
+
+[dependencies]
+# Зависимости от локальных крейтов
+llp-core = { path = "../llp-core" }
+llp-mimicry = { path = "../llp-mimicry" }
+
+# Async runtime
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+
+# Сериализация
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+# Ошибки
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Логирование
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Случайные числа
+rand = { workspace = true }
+
+# Работа с IP и сетью
+pnet = "0.34"
+pnet_packet = "0.34"
+
+# Async channels
+async-channel = "2.1"
+
+# Clap для CLI аргументов
+clap = { version = "4.4", features = ["derive"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
