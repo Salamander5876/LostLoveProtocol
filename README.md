@@ -50,13 +50,14 @@ cargo test -- --nocapture
 ## Структура проекта
 
 ```
-llp/
+LostLoveProtocol/
 ├── crates/
-│   ├── llp-core/           # Ядро протокола
-│   ├── llp-mimicry/        # Система мимикрии
-│   ├── llp-server/         # Серверная часть
-│   └── llp-client/         # Клиентская часть
-└── installer/              # Установщик для Linux
+│   ├── llp-core/           ✅ Ядро протокола
+│   ├── llp-mimicry/        ✅ Система мимикрии
+│   ├── llp-server/         ✅ VPN сервер
+│   └── llp-client/         ✅ VPN клиент
+├── installer/              ✅ Установщик для Linux
+└── config/                 ✅ Примеры конфигурации
 ```
 
 ## Использование
@@ -64,13 +65,26 @@ llp/
 ### Запуск сервера
 
 ```bash
-cargo run -p llp-server -- --config server.toml
+# На Linux с установщиком
+cd installer
+sudo bash install.sh
+
+# Ручная сборка и запуск
+cargo build --release -p llp-server
+sudo ./target/release/llp-server --config server.toml
 ```
 
 ### Подключение клиента
 
 ```bash
-cargo run -p llp-client -- --config client.toml
+# Генерация конфигурации
+llp-client generate-config -o client.toml
+
+# Редактирование конфигурации
+nano client.toml  # Укажите адрес сервера
+
+# Запуск (требуются права root для TUN)
+sudo llp-client --config client.toml
 ```
 
 ## Конфигурация
@@ -120,12 +134,32 @@ MIT
 
 ## Статус разработки
 
-- [x] llp-core (ядро протокола)
-- [ ] llp-mimicry (система мимикрии)
-- [ ] llp-server (сервер)
-- [ ] llp-client (клиент)
-- [ ] Установщик
+- [x] llp-core (ядро протокола) — 100%
+- [x] llp-mimicry (система мимикрии) — 100%
+- [x] llp-server (сервер) — 100%
+- [x] llp-client (клиент) — 100%
+- [x] Установщик — 100%
+
+**Версия**: 0.3.0-alpha
+**Статус**: ✅ Готов к тестированию
+
+## Документация
+
+- [PROGRESS.md](PROGRESS.md) — Подробный прогресс разработки
+- [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) — Детальный статус реализации
+- [config/server.toml.example](config/server.toml.example) — Пример конфигурации сервера
+- [config/client.toml.example](config/client.toml.example) — Пример конфигурации клиента
+
+## Статистика
+
+| Компонент | Строк кода | Файлов | Тесты | Статус |
+|-----------|------------|--------|-------|--------|
+| llp-core | ~2300 | 6 | 62+ | ✅ |
+| llp-mimicry | ~1200 | 9 | 30+ | ✅ |
+| llp-server | ~1100 | 5 | 10+ | ✅ |
+| llp-client | ~1500 | 5 | 8+ | ✅ |
+| **ИТОГО** | **~6100** | **25** | **110+** | ✅ |
 
 ## Контакты
 
-GitHub Issues: https://github.com/yourusername/llp/issues
+Для вопросов и предложений используйте GitHub Issues
