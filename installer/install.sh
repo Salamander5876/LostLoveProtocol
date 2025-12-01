@@ -106,8 +106,17 @@ echo -e "${GREEN}✓${NC} Бинарник установлен: $BIN_DIR/llp-se
 step "Генерация конфигурации..."
 
 if [ ! -f "$CONFIG_DIR/server.toml" ]; then
-    llp-server --generate-config "$CONFIG_DIR/server.toml"
-    echo -e "${GREEN}✓${NC} Конфигурация создана: $CONFIG_DIR/server.toml"
+    # Используем автоматическое создание конфигурации при первом запуске
+    cd "$CONFIG_DIR"
+    llp-server --config server.toml 2>/dev/null || true
+
+    if [ -f "$CONFIG_DIR/server.toml" ]; then
+        echo -e "${GREEN}✓${NC} Конфигурация автоматически создана: $CONFIG_DIR/server.toml"
+    else
+        # Fallback на старый метод
+        llp-server --generate-config "$CONFIG_DIR/server.toml"
+        echo -e "${GREEN}✓${NC} Конфигурация создана: $CONFIG_DIR/server.toml"
+    fi
 else
     echo -e "${YELLOW}⚠${NC} Конфигурация уже существует, пропускаем"
 fi

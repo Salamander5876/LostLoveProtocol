@@ -8,6 +8,7 @@
 - **Мимикрия**: Имитация трафика VK Video, Яндекс.Музыка, RuTube
 - **Безопасность**: Replay protection, perfect forward secrecy, zeroize для секретов
 - **Производительность**: Асинхронность (Tokio), zero-copy где возможно
+- **Простота использования**: Автоматическое создание конфигурации при первом запуске
 
 ## Требования
 
@@ -62,30 +63,51 @@ LostLoveProtocol/
 
 ## Использование
 
-### Запуск сервера
+### Быстрый старт
+
+**Сервер:**
+```bash
+# Сборка
+cargo build --release -p llp-server
+
+# Первый запуск автоматически создаст конфигурацию
+sudo ./target/release/llp-server
+
+# Отредактируйте созданную конфигурацию
+nano server.toml
+
+# Запустите снова
+sudo ./target/release/llp-server
+```
+
+**Клиент:**
+```bash
+# Сборка
+cargo build --release -p llp-client
+
+# Первый запуск автоматически создаст конфигурацию
+sudo ./target/release/llp-client
+
+# Отредактируйте конфигурацию и укажите адрес сервера
+nano client.toml
+
+# Запустите снова
+sudo ./target/release/llp-client
+```
+
+### Автоматическая установка на Linux
 
 ```bash
-# На Linux с установщиком
 cd installer
 sudo bash install.sh
-
-# Ручная сборка и запуск
-cargo build --release -p llp-server
-sudo ./target/release/llp-server --config server.toml
 ```
 
-### Подключение клиента
-
-```bash
-# Генерация конфигурации
-llp-client generate-config -o client.toml
-
-# Редактирование конфигурации
-nano client.toml  # Укажите адрес сервера
-
-# Запуск (требуются права root для TUN)
-sudo llp-client --config client.toml
-```
+Установщик автоматически:
+- Установит Rust (если не установлен)
+- Скомпилирует проект
+- Создаст конфигурацию
+- Настроит systemd сервис
+- Настроит IP forwarding и NAT
 
 ## Конфигурация
 
