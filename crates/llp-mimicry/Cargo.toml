@@ -1,0 +1,41 @@
+[package]
+name = "llp-mimicry"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Зависимость от llp-core
+llp-core = { path = "../llp-core" }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Сериализация
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Ошибки
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Логирование
+tracing = { workspace = true }
+
+# Случайные числа
+rand = { workspace = true }
+
+# HTTP заголовки и парсинг
+http = "1.0"
+httparse = "1.8"
+
+# Время
+chrono = { workspace = true }
+
+# Hex encoding
+hex = "0.4"
+
+[dev-dependencies]
+tokio-test = "0.4"

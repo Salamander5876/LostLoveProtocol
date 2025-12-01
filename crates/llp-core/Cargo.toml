@@ -1,0 +1,42 @@
+[package]
+name = "llp-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+
+# Криптография
+ring = { workspace = true }
+x25519-dalek = { workspace = true }
+chacha20poly1305 = { workspace = true }
+blake3 = { workspace = true }
+hkdf = { workspace = true }
+sha2 = { workspace = true }
+ed25519-dalek = { workspace = true }
+zeroize = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true }
+
+# Сериализация и работа с байтами
+bytes = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Ошибки и утилиты
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+# Время
+chrono = { workspace = true }
+
+# Битовые флаги
+bitflags = "2.4"
+
+[dev-dependencies]
+tokio-test = "0.4"
+hex = "0.4"

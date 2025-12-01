@@ -1,0 +1,275 @@
+//! Профиль мимикрии для RuTube
+//!
+//! Имитирует HTTP-трафик видеостриминга RuTube (rutube.ru).
+//! Генерирует реалистичные заголовки для HLS/DASH потоков.
+
+use bytes::{BufMut, Bytes, BytesMut};
+use rand::{Rng, RngCore};
+use std::time::Duration;
+
+use crate::error::{MimicryError, Result};
+use crate::timing::TimingProfile;
+
+/// User-Agent строки для RuTube клиентов
+const USER_AGENTS: &[&str] = &[
+    "RuTube/4.2.1 (Android 13; SM-G998B)",
+    "RuTube/4.2.0 (iOS 16.5; iPhone 14)",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) RuTube/4.2",
+    "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 RuTube",
+];
+
+/// Форматы видео (HLS сегменты)
+const VIDEO_FORMATS: &[&str] = &["ts", "m4s"];
+
+/// Качества видео
+const VIDEO_QUALITIES: &[&str] = &["360p", "480p", "720p", "1080p"];
+
+/// Профиль мимикрии RuTube
+pub struct RuTubeProfile {
+    /// Генератор случайных чисел
+    rng: rand::rngs::ThreadRng,
+    /// Timing профиль для имитации паттернов трафика
+    timing: TimingProfile,
+}
+
+impl RuTubeProfile {
+    /// Создать новый профиль
+    pub fn new() -> Self {
+        Self {
+            rng: rand::thread_rng(),
+            timing: TimingProfile::video_streaming(),
+        }
+    }
+
+    /// Генерация HTTP запроса для HLS segment
+    ///
+    /// Пример:
+    /// ```
+    /// GET /video/12345/720p/segment_00042.ts HTTP/1.1
+    /// Host: rutube.ru
+    /// User-Agent: RuTube/4.2.1
+    /// X-RuTube-Session: abc123
+    /// ```
+    pub fn generate_request(&mut self, video_id: u64, segment_num: u32) -> Bytes {
+        let user_agent = self.random_user_agent();
+        let session_id = self.generate_session_id();
+        let quality = self.random_quality();
+        let format = self.random_format();
+        let device_id = self.generate_device_id();
+
+        let request = format!(
+            "GET /video/{}/{}/segment_{:05}.{} HTTP/1.1\r\n\
+             Host: rutube.ru\r\n\
+             User-Agent: {}\r\n\
+             Accept: */*\r\n\
+             Accept-Encoding: gzip, deflate\r\n\
+             Connection: keep-alive\r\n\
+             X-RuTube-Session: {}\r\n\
+             X-RuTube-Device-Id: {}\r\n\
+             X-RuTube-Quality: {}\r\n\
+             Referer: https://rutube.ru/video/{}/\r\n\
+             Origin: https://rutube.ru\r\n\
+             \r\n",
+            video_id,
+            quality,
+            segment_num,
+            format,
+            user_agent,
+            session_id,
+            device_id,
+            quality,
+            video_id
+        );
+
+        Bytes::from(request)
+    }
+
+    /// Генерация HTTP ответа с зашифрованными данными
+    ///
+    /// Обёртывает зашифрованный payload в HTTP 200 OK ответ,
+    /// имитируя HLS segment.
+    pub fn generate_response(&mut self, encrypted_payload: &[u8]) -> Bytes {
+        let session_id = self.generate_session_id();
+        let content_length = encrypted_payload.len();
+        let format = self.random_format();
+
+        let mut response = BytesMut::new();
+
+        let content_type = match format {
+            "ts" => "video/mp2t",
+            "m4s" => "video/iso.segment",
+            _ => "video/mp2t",
+        };
+
+        let headers = format!(
+            "HTTP/1.1 200 OK\r\n\
+             Server: nginx/1.21.6\r\n\
+             Date: {}\r\n\
+             Content-Type: {}\r\n\
+             Content-Length: {}\r\n\
+             Connection: keep-alive\r\n\
+             X-RuTube-Session: {}\r\n\
+             X-RuTube-Server: cdn{}\r\n\
+             X-RuTube-Cache: HIT\r\n\
+             Accept-Ranges: bytes\r\n\
+             Cache-Control: public, max-age=604800\r\n\
+             Access-Control-Allow-Origin: https://rutube.ru\r\n\
+             Access-Control-Allow-Credentials: true\r\n\
+             \r\n",
+            self.current_http_date(),
+            content_type,
+            content_length,
+            session_id,
+            self.rng.gen_range(1..=10)
+        );
+
+        response.put(headers.as_bytes());
+        response.put(encrypted_payload);
+
+        response.freeze()
+    }
+
+    /// Получить timing для следующего пакета (burst для видео)
+    pub fn next_packet_timing(&mut self) -> Duration {
+        self.timing.next_delay(&mut self.rng)
+    }
+
+    /// Получить рекомендуемый размер chunk (HLS segments обычно 100-500 KB)
+    pub fn recommended_chunk_size(&mut self) -> usize {
+        self.rng.gen_range(100 * 1024..500 * 1024)
+    }
+
+    /// Генерация случайного session ID
+    fn generate_session_id(&mut self) -> String {
+        let mut bytes = [0u8; 12];
+        self.rng.fill_bytes(&mut bytes);
+        hex::encode(bytes)
+    }
+
+    /// Генерация device ID
+    fn generate_device_id(&mut self) -> String {
+        format!(
+            "{:08x}-{:04x}-{:04x}",
+            self.rng.gen::<u32>(),
+            self.rng.gen::<u16>(),
+            self.rng.gen::<u16>()
+        )
+    }
+
+    /// Случайный User-Agent
+    fn random_user_agent(&mut self) -> &'static str {
+        USER_AGENTS[self.rng.gen_range(0..USER_AGENTS.len())]
+    }
+
+    /// Случайное качество видео
+    fn random_quality(&mut self) -> &'static str {
+        VIDEO_QUALITIES[self.rng.gen_range(0..VIDEO_QUALITIES.len())]
+    }
+
+    /// Случайный формат видео
+    fn random_format(&mut self) -> &'static str {
+        VIDEO_FORMATS[self.rng.gen_range(0..VIDEO_FORMATS.len())]
+    }
+
+    /// Текущая дата в HTTP формате
+    fn current_http_date(&self) -> String {
+        use chrono::Utc;
+        Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string()
+    }
+}
+
+impl Default for RuTubeProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Парсинг RuTube запроса/ответа
+pub struct RuTubeParser;
+
+impl RuTubeParser {
+    /// Извлечь payload из HTTP запроса
+    pub fn extract_request_payload(data: &[u8]) -> Result<Bytes> {
+        let mut headers = [httparse::EMPTY_HEADER; 32];
+        let mut req = httparse::Request::new(&mut headers);
+
+        let header_size = req
+            .parse(data)
+            .map_err(|e| MimicryError::ParseError(format!("HTTP parse error: {:?}", e)))?
+            .ok_or_else(|| MimicryError::ParseError("Incomplete HTTP request".to_string()))?;
+
+        if header_size >= data.len() {
+            return Ok(Bytes::new());
+        }
+
+        Ok(Bytes::copy_from_slice(&data[header_size..]))
+    }
+
+    /// Извлечь payload из HTTP ответа
+    pub fn extract_response_payload(data: &[u8]) -> Result<Bytes> {
+        let mut headers = [httparse::EMPTY_HEADER; 32];
+        let mut resp = httparse::Response::new(&mut headers);
+
+        let header_size = resp
+            .parse(data)
+            .map_err(|e| MimicryError::ParseError(format!("HTTP parse error: {:?}", e)))?
+            .ok_or_else(|| MimicryError::ParseError("Incomplete HTTP response".to_string()))?;
+
+        if header_size >= data.len() {
+            return Err(MimicryError::ParseError("No payload in response".to_string()).into());
+        }
+
+        Ok(Bytes::copy_from_slice(&data[header_size..]))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_request() {
+        let mut profile = RuTubeProfile::new();
+        let request = profile.generate_request(98765, 42);
+
+        let request_str = String::from_utf8_lossy(&request);
+        assert!(request_str.contains("GET /video/98765/"));
+        assert!(request_str.contains("/segment_00042."));
+        assert!(request_str.contains("Host: rutube.ru"));
+        assert!(request_str.contains("X-RuTube-Session: "));
+    }
+
+    #[test]
+    fn test_generate_response() {
+        let mut profile = RuTubeProfile::new();
+        let payload = b"encrypted video segment";
+        let response = profile.generate_response(payload);
+
+        let response_str = String::from_utf8_lossy(&response);
+        assert!(response_str.contains("HTTP/1.1 200 OK"));
+        assert!(response_str.contains("Content-Type: video/"));
+        assert!(response_str.contains("X-RuTube-Session: "));
+        assert!(response_str.contains("X-RuTube-Cache: HIT"));
+
+        // Проверка, что payload в конце
+        assert!(response.ends_with(payload));
+    }
+
+    #[test]
+    fn test_extract_response_payload() {
+        let mut profile = RuTubeProfile::new();
+        let original_payload = b"test video segment";
+        let response = profile.generate_response(original_payload);
+
+        let extracted = RuTubeParser::extract_response_payload(&response).unwrap();
+        assert_eq!(&extracted[..], original_payload);
+    }
+
+    #[test]
+    fn test_chunk_size() {
+        let mut profile = RuTubeProfile::new();
+        let size = profile.recommended_chunk_size();
+        assert!(size >= 100 * 1024);
+        assert!(size <= 500 * 1024);
+    }
+}
