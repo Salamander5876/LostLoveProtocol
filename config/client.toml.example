@@ -1,0 +1,58 @@
+# Пример конфигурации LLP Client
+# Скопируйте в client.toml и отредактируйте под свои нужды
+
+[server]
+# IP адрес или hostname сервера
+host = "your-server.example.com"
+
+# Порт сервера
+port = 8443
+
+# Таймаут подключения (секунды)
+connection_timeout_secs = 30
+
+# Попытки переподключения
+reconnect_attempts = 5
+
+# Задержка между попытками переподключения (секунды)
+reconnect_delay_secs = 5
+
+[vpn]
+# IP адрес клиента в VPN (назначается сервером, если не указан)
+# client_ip = "10.8.0.2"
+
+# DNS серверы
+dns_servers = ["8.8.8.8", "1.1.1.1"]
+
+# MTU для TUN интерфейса
+mtu = 1420
+
+# Имя TUN интерфейса
+# Windows: llp0
+# Linux/macOS: tun0
+tun_name = "tun0"
+
+# Маршрутизировать весь трафик через VPN
+route_all_traffic = true
+
+[security]
+# Профиль мимикрии: none, vk_video, yandex_music, rutube
+mimicry_profile = "vk_video"
+
+# Интервал keepalive (секунды)
+keepalive_interval_secs = 30
+
+# Верификация сертификата сервера
+verify_server = true
+
+[logging]
+# Уровень логирования: trace, debug, info, warn, error
+level = "info"
+
+# Логировать в файл
+log_to_file = false
+
+# Путь к файлу логов
+# Windows: "C:\\ProgramData\\llp-client\\llp-client.log"
+# Linux: "/var/log/llp-client.log"
+log_file_path = "/var/log/llp-client.log"
