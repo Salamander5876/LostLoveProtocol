@@ -4,7 +4,7 @@
 //! Генерирует реалистичные заголовки, паттерны трафика и timing.
 
 use bytes::{BufMut, Bytes, BytesMut};
-use rand::{Rng, RngCore};
+use rand::{rngs::OsRng, Rng, RngCore};
 use std::time::Duration;
 
 use crate::error::{MimicryError, Result};
@@ -27,7 +27,7 @@ const VIDEO_FORMATS: &[&str] = &["mp4", "webm", "ts"];
 /// Профиль мимикрии VK Video
 pub struct VkVideoProfile {
     /// Генератор случайных чисел
-    rng: rand::rngs::ThreadRng,
+    rng: OsRng,
     /// Timing профиль для имитации паттернов трафика
     timing: TimingProfile,
 }
@@ -36,7 +36,7 @@ impl VkVideoProfile {
     /// Создать новый профиль
     pub fn new() -> Self {
         Self {
-            rng: rand::thread_rng(),
+            rng: OsRng,
             timing: TimingProfile::video_streaming(),
         }
     }

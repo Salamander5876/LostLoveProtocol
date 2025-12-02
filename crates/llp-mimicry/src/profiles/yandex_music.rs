@@ -4,7 +4,7 @@
 //! Генерирует реалистичные заголовки для MP3/AAC стриминга.
 
 use bytes::{BufMut, Bytes, BytesMut};
-use rand::{Rng, RngCore};
+use rand::{rngs::OsRng, Rng, RngCore};
 use std::time::Duration;
 
 use crate::error::{MimicryError, Result};
@@ -27,7 +27,7 @@ const BITRATES: &[&str] = &["128", "192", "256", "320"];
 /// Профиль мимикрии Яндекс.Музыка
 pub struct YandexMusicProfile {
     /// Генератор случайных чисел
-    rng: rand::rngs::ThreadRng,
+    rng: OsRng,
     /// Timing профиль для имитации паттернов трафика
     timing: TimingProfile,
 }
@@ -36,7 +36,7 @@ impl YandexMusicProfile {
     /// Создать новый профиль
     pub fn new() -> Self {
         Self {
-            rng: rand::thread_rng(),
+            rng: OsRng,
             timing: TimingProfile::audio_streaming(),
         }
     }

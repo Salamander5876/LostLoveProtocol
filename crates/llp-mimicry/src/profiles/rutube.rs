@@ -4,7 +4,7 @@
 //! Генерирует реалистичные заголовки для HLS/DASH потоков.
 
 use bytes::{BufMut, Bytes, BytesMut};
-use rand::{Rng, RngCore};
+use rand::{rngs::OsRng, Rng, RngCore};
 use std::time::Duration;
 
 use crate::error::{MimicryError, Result};
@@ -27,7 +27,7 @@ const VIDEO_QUALITIES: &[&str] = &["360p", "480p", "720p", "1080p"];
 /// Профиль мимикрии RuTube
 pub struct RuTubeProfile {
     /// Генератор случайных чисел
-    rng: rand::rngs::ThreadRng,
+    rng: OsRng,
     /// Timing профиль для имитации паттернов трафика
     timing: TimingProfile,
 }
@@ -36,7 +36,7 @@ impl RuTubeProfile {
     /// Создать новый профиль
     pub fn new() -> Self {
         Self {
-            rng: rand::thread_rng(),
+            rng: OsRng,
             timing: TimingProfile::video_streaming(),
         }
     }
