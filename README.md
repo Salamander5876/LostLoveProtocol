@@ -56,7 +56,11 @@ LostLoveProtocol/
 │   ├── llp-core/           ✅ Ядро протокола
 │   ├── llp-mimicry/        ✅ Система мимикрии
 │   ├── llp-server/         ✅ VPN сервер
-│   └── llp-client/         ✅ VPN клиент
+│   └── llp-client/         ✅ VPN клиент (Linux)
+├── client/                 ✅ Windows PowerShell клиент
+│   ├── LLP-Client.ps1      - Главный скрипт
+│   ├── configs/            - Папка для конфигураций
+│   └── README.md           - Документация клиента
 ├── installer/              ✅ Установщик для Linux
 └── config/                 ✅ Примеры конфигурации
 ```
@@ -65,7 +69,7 @@ LostLoveProtocol/
 
 ### Быстрый старт
 
-**Сервер:**
+**Сервер (Linux):**
 ```bash
 # Сборка
 cargo build --release -p llp-server
@@ -78,9 +82,29 @@ nano server.toml
 
 # Запустите снова
 sudo ./target/release/llp-server
+
+# Экспорт конфигурации для клиента
+./target/release/llp-server --export-client-config client1.toml
 ```
 
-**Клиент:**
+**Клиент (Windows PowerShell):**
+```powershell
+# Перейдите в папку client
+cd client
+
+# Запустите PowerShell от имени администратора
+.\LLP-Client.ps1
+
+# При первом запуске:
+# - Автоматически установит Rust
+# - Скомпилирует клиент
+# - Создаст папку configs
+
+# Скопируйте .toml файлы с сервера в папку configs\
+# Выберите конфигурацию из меню и подключитесь
+```
+
+**Клиент (Linux/Manual):**
 ```bash
 # Сборка
 cargo build --release -p llp-client

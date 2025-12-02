@@ -33,6 +33,10 @@ struct Args {
     #[arg(long)]
     generate_config: Option<PathBuf>,
 
+    /// Экспорт клиентской конфигурации
+    #[arg(long)]
+    export_client_config: Option<PathBuf>,
+
     /// Уровень логирования (trace, debug, info, warn, error)
     #[arg(short, long)]
     log_level: Option<String>,
@@ -49,6 +53,16 @@ async fn main() {
             std::process::exit(1);
         }
         println!("Конфигурация сохранена в: {}", path.display());
+        return;
+    }
+
+    // Экспорт клиентской конфигурации
+    if let Some(path) = args.export_client_config {
+        if let Err(e) = export_client_config(&args.config, &path) {
+            eprintln!("Ошибка экспорта клиентской конфигурации: {}", e);
+            std::process::exit(1);
+        }
+        println!("Клиентская конфигурация сохранена в: {}", path.display());
         return;
     }
 
@@ -179,5 +193,76 @@ async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error:
 fn generate_config(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let config = ServerConfig::default();
     config.to_file(path)?;
+    Ok(())
+}
+
+/// Экспорт клиентской конфигурации
+fn export_client_config(
+    server_config_path: &PathBuf,
+    client_config_path: &PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::fs;
+
+    // Загрузка конфигурации сервера
+    let server_config = ServerConfig::from_file(server_config_path)?;
+
+    // Получение внешнего адреса сервера
+    let server_address = if server_config.network.bind_ip == "0.0.0.0" {
+        // Если сервер слушает на всех интерфейсах, нужно указать реальный адрес
+        format!("your-server-ip:{}", server_config.network.bind_port)
+    } else {
+        server_config.bind_address()
+    };
+
+    // Создание клиентской конфигурации
+    let client_config = format!(
+        r#"# LostLoveProtocol Client Configuration
+# Сгенерировано автоматически из серверной конфигурации
+
+[server]
+address = "{}"
+
+[vpn]
+interface_name = "llp0"
+# IP адрес клиента в VPN сети (должен быть уникальным для каждого клиента)
+ip_address = "10.8.0.2"
+subnet_mask = "255.255.255.0"
+mtu = {}
+
+[security]
+# Профиль мимикрии должен совпадать с сервером
+mimicry_profile = "{}"
+enable_replay_protection = true
+max_packet_age_sec = 60
+
+[reconnect]
+enable = true
+initial_delay_ms = 1000
+max_delay_ms = 30000
+max_attempts = 0  # 0 = бесконечно
+
+[logging]
+level = "info"
+"#,
+        server_address,
+        server_config.vpn.mtu,
+        server_config.security.default_mimicry_profile
+    );
+
+    // Сохранение в файл
+    fs::write(client_config_path, client_config)?;
+
+    println!("\n╔══════════════════════════════════════════════════╗");
+    println!("║   Клиентская конфигурация успешно создана       ║");
+    println!("╚══════════════════════════════════════════════════╝\n");
+    println!("📁 Файл: {}", client_config_path.display());
+    println!("\n⚠️  ВАЖНО:");
+    println!("   1. Замените 'your-server-ip' на реальный IP/домен сервера");
+    println!("   2. Измените ip_address для каждого клиента (10.8.0.2, 10.8.0.3, и т.д.)");
+    println!("   3. Скопируйте этот файл на клиентскую машину");
+    println!("\n💡 Для Windows клиента:");
+    println!("   Скопируйте файл в папку: client\\configs\\");
+    println!();
+
     Ok(())
 }

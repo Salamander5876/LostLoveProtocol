@@ -12,7 +12,7 @@ use std::time::{Duration, Instant};
 
 use crate::crypto::{AeadCipher, SessionKey};
 use crate::error::{Result, SessionError};
-use crate::packet::{LlpPacket, MimicryProfile, PacketFlags};
+use crate::packet::MimicryProfile;
 
 /// Размер окна для replay protection (количество пакетов)
 const REPLAY_WINDOW_SIZE: usize = 256;

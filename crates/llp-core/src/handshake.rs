@@ -23,7 +23,6 @@
 
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use rand::{CryptoRng, RngCore};
-use std::time::Duration;
 
 use crate::crypto::{
     hmac_sha256, random_array, verify_hmac_sha256, SessionKey, X25519Key, RANDOM_SIZE,

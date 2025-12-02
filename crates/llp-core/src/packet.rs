@@ -379,9 +379,9 @@ impl LlpPacket {
 
         // Извлекаем auth tag
         if buf.len() != AUTH_TAG_SIZE {
-            return Err(PacketError::InvalidAuthTagSize {
-                expected: AUTH_TAG_SIZE,
-                actual: buf.len(),
+            return Err(PacketError::InsufficientData {
+                required: AUTH_TAG_SIZE,
+                available: buf.len(),
             }
             .into());
         }
