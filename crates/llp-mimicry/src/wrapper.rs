@@ -4,10 +4,10 @@
 //! в HTTP-подобный трафик выбранного профиля мимикрии.
 
 use bytes::Bytes;
-use llp_core::packet::{LlpPacket, MimicryProfile};
+use llp_core::packet::MimicryProfile;
 use std::time::Duration;
 
-use crate::error::{MimicryError, Result};
+use crate::error::Result;
 use crate::profiles::{
     RuTubeParser, RuTubeProfile, VkVideoParser, VkVideoProfile, YandexMusicParser,
     YandexMusicProfile,

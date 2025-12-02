@@ -145,7 +145,7 @@ async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error:
     let router_handle = router.handle();
 
     // Создание NAT gateway
-    let nat = NatGateway::default(); // TODO: Получить внешний IP
+    let _nat = NatGateway::default(); // TODO: Получить внешний IP
 
     // Запуск роутера в отдельной задаче
     tokio::spawn(async move {

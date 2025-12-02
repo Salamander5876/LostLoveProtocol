@@ -9,10 +9,11 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error};
+use tracing::debug;
 
 /// Запись NAT таблицы
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct NatEntry {
     /// Внутренний IP клиента (VPN IP)
     internal_ip: IpAddr,
@@ -27,6 +28,7 @@ struct NatEntry {
 }
 
 /// NAT Gateway
+#[allow(dead_code)]
 pub struct NatGateway {
     /// NAT таблица: (internal_ip, src_port) -> NatEntry
     nat_table: Arc<RwLock<HashMap<(IpAddr, u16), NatEntry>>>,
@@ -46,6 +48,7 @@ impl NatGateway {
     /// Обработка исходящего пакета (из VPN в интернет)
     ///
     /// Выполняет Source NAT (SNAT) — замена внутреннего IP на внешний
+    #[allow(dead_code)]
     pub async fn process_outbound(&self, packet: &[u8]) -> Option<Vec<u8>> {
         // TODO: Полная реализация SNAT
         // Требует парсинга IP и TCP/UDP заголовков
@@ -65,6 +68,7 @@ impl NatGateway {
     /// Обработка входящего пакета (из интернета в VPN)
     ///
     /// Выполняет Destination NAT (DNAT) — замена внешнего IP на внутренний
+    #[allow(dead_code)]
     pub async fn process_inbound(&self, packet: &[u8]) -> Option<(IpAddr, Vec<u8>)> {
         // TODO: Полная реализация DNAT
         // Требует lookup в NAT таблице и модификации пакета
@@ -75,18 +79,21 @@ impl NatGateway {
     }
 
     /// Добавить запись в NAT таблицу
+    #[allow(dead_code)]
     async fn add_nat_entry(&self, entry: NatEntry) {
         let mut table = self.nat_table.write().await;
         table.insert((entry.internal_ip, entry.src_port), entry);
     }
 
     /// Найти запись в NAT таблице
-    async fn lookup_nat_entry(&self, external_port: u16) -> Option<NatEntry> {
+    #[allow(dead_code)]
+    async fn lookup_nat_entry(&self, _external_port: u16) -> Option<NatEntry> {
         // TODO: Lookup по external_port
         None
     }
 
     /// Очистить устаревшие записи из NAT таблицы
+    #[allow(dead_code)]
     pub async fn cleanup_stale_entries(&self) {
         // TODO: Удаление старых записей (timeout ~120 секунд)
         let mut table = self.nat_table.write().await;
@@ -103,6 +110,7 @@ impl Default for NatGateway {
 // Вспомогательные функции для парсинга IP пакетов
 
 /// Извлечь IP адрес источника из пакета
+#[allow(dead_code)]
 fn extract_src_ip(packet: &[u8]) -> Option<IpAddr> {
     if packet.len() < 20 {
         return None;
@@ -119,6 +127,7 @@ fn extract_src_ip(packet: &[u8]) -> Option<IpAddr> {
 }
 
 /// Извлечь IP адрес назначения из пакета
+#[allow(dead_code)]
 fn extract_dst_ip(packet: &[u8]) -> Option<IpAddr> {
     if packet.len() < 20 {
         return None;
@@ -135,6 +144,7 @@ fn extract_dst_ip(packet: &[u8]) -> Option<IpAddr> {
 }
 
 /// Извлечь протокол из IP пакета
+#[allow(dead_code)]
 fn extract_protocol(packet: &[u8]) -> Option<u8> {
     if packet.len() < 20 {
         return None;

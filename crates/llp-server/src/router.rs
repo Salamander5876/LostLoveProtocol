@@ -9,17 +9,17 @@
 
 use bytes::Bytes;
 use llp_core::{
-    packet::{LlpPacket, MimicryProfile, PacketFlags},
+    packet::MimicryProfile,
     session::SessionManager,
 };
 use llp_mimicry::PacketWrapper;
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::sync::Arc;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::sync::{mpsc, RwLock};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use crate::nat::NatGateway;
 
@@ -27,6 +27,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 
 /// Команды для роутера
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum RouterCommand {
     /// Зарегистрировать нового клиента
     RegisterClient {
@@ -70,6 +71,7 @@ impl RouterHandle {
     }
 
     /// Отправить данные клиенту
+    #[allow(dead_code)]
     pub async fn send_to_client(&self, session_id: u64, data: Bytes) -> Result<()> {
         self.tx
             .send(RouterCommand::SendToClient { session_id, data })
@@ -78,6 +80,7 @@ impl RouterHandle {
     }
 
     /// Удалить клиента
+    #[allow(dead_code)]
     pub async fn remove_client(&self, session_id: u64) -> Result<()> {
         self.tx
             .send(RouterCommand::RemoveClient { session_id })
@@ -87,6 +90,7 @@ impl RouterHandle {
 }
 
 /// Информация о подключённом клиенте
+#[allow(dead_code)]
 struct ClientInfo {
     session_id: u64,
     stream: TcpStream,
@@ -95,6 +99,7 @@ struct ClientInfo {
 }
 
 /// Роутер пакетов
+#[allow(dead_code)]
 pub struct Router {
     /// Менеджер сессий
     session_manager: Arc<RwLock<SessionManager>>,
@@ -133,6 +138,7 @@ impl Router {
     }
 
     /// Установить NAT gateway
+    #[allow(dead_code)]
     pub fn set_nat_gateway(&mut self, nat: NatGateway) {
         self.nat_gateway = Some(nat);
     }
@@ -203,9 +209,9 @@ impl Router {
 
     /// Цикл чтения от клиента
     async fn client_read_loop(
-        session_id: u64,
-        handle: RouterHandle,
-        session_manager: Arc<RwLock<SessionManager>>,
+        _session_id: u64,
+        _handle: RouterHandle,
+        _session_manager: Arc<RwLock<SessionManager>>,
     ) -> Result<()> {
         // TODO: Реализовать чтение пакетов от клиента
         // Пока заглушка
@@ -249,7 +255,8 @@ impl Router {
     }
 
     /// Маршрутизация IP пакета
-    async fn route_ip_packet(&mut self, packet: &[u8]) -> Result<()> {
+    #[allow(dead_code)]
+    async fn route_ip_packet(&mut self, _packet: &[u8]) -> Result<()> {
         // TODO: Парсинг IP заголовка и маршрутизация
         // Заглушка на будущее
         Ok(())

@@ -293,11 +293,13 @@ impl ServerConfig {
     }
 
     /// Получить интервал keepalive
+    #[allow(dead_code)]
     pub fn keepalive_interval(&self) -> Duration {
         Duration::from_secs(self.security.keepalive_interval_secs)
     }
 
     /// Получить таймаут keepalive
+    #[allow(dead_code)]
     pub fn keepalive_timeout(&self) -> Duration {
         Duration::from_secs(self.security.keepalive_timeout_secs)
     }

@@ -9,9 +9,8 @@
 use llp_core::{
     handshake::ServerHandshake,
     packet::MimicryProfile,
-    session::{Session, SessionManager},
+    session::SessionManager,
 };
-use llp_mimicry::PacketWrapper;
 use rand::rngs::OsRng;
 use std::net::SocketAddr;
 use std::sync::Arc;
