@@ -1,0 +1,26 @@
+[network]
+bind_ip = "185.250.181.20"
+port = 8443
+max_connections = 1000
+connection_timeout_secs = 30
+
+[vpn]
+subnet = "10.8.0.0/24"
+server_ip = "10.8.0.1"
+dns_servers = [
+    "8.8.8.8",
+    "1.1.1.1",
+]
+mtu = 1420
+
+[security]
+default_mimicry_profile = "vk_video"
+session_lifetime_secs = 86400
+keepalive_interval_secs = 30
+keepalive_timeout_secs = 90
+max_timestamp_drift_secs = 300
+
+[logging]
+level = "info"
+log_to_file = true
+log_file_path = "/var/log/llp-server.log"
