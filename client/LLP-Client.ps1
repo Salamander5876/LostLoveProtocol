@@ -110,8 +110,11 @@ function Install-Rust {
         Start-Process -FilePath $tempFile -ArgumentList "-y" -Wait -NoNewWindow
 
         # Обновление PATH
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
-        $env:Path += ";$env:USERPROFILE\.cargo\bin"
+        $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+        $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+        $env:Path = "$machinePath;$userPath"
+        $cargoPath = Join-Path $env:USERPROFILE ".cargo\bin"
+        $env:Path += ";$cargoPath"
 
         Write-Success "Rust успешно установлен"
 
