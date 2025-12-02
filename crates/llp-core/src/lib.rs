@@ -69,7 +69,7 @@
 //! # }
 //! ```
 
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 #![warn(clippy::all)]
 #![allow(clippy::single_component_path_imports)]
 

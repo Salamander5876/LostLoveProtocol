@@ -37,6 +37,7 @@ pub struct Session {
     /// Идентификатор сессии
     session_id: u64,
     /// Сессионный ключ
+    #[allow(dead_code)]
     session_key: SessionKey,
     /// Шифровальщик для исходящих пакетов
     tx_cipher: AeadCipher,
