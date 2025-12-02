@@ -196,6 +196,34 @@ fn generate_config(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Получение внешнего IP адреса сервера
+fn get_public_ip() -> Option<String> {
+    use std::process::Command;
+
+    // Пробуем несколько методов определения публичного IP
+    let methods = vec![
+        // Метод 1: через ip route (работает на VPS)
+        ("ip route get 1.1.1.1 | grep -oP 'src \\K\\S+'", "sh"),
+        // Метод 2: через hostname -I
+        ("hostname -I | awk '{print $1}'", "sh"),
+        // Метод 3: через внешний сервис (если есть интернет)
+        ("curl -s ifconfig.me", "sh"),
+    ];
+
+    for (cmd, shell) in methods {
+        if let Ok(output) = Command::new(shell).arg("-c").arg(cmd).output() {
+            if output.status.success() {
+                let ip = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                if !ip.is_empty() && ip.contains('.') {
+                    return Some(ip);
+                }
+            }
+        }
+    }
+
+    None
+}
+
 /// Экспорт клиентской конфигурации
 fn export_client_config(
     server_config_path: &PathBuf,
@@ -208,8 +236,14 @@ fn export_client_config(
 
     // Получение внешнего адреса сервера
     let server_address = if server_config.network.bind_ip == "0.0.0.0" {
-        // Если сервер слушает на всех интерфейсах, нужно указать реальный адрес
-        format!("your-server-ip:{}", server_config.network.bind_port)
+        // Пытаемся автоматически определить публичный IP
+        if let Some(public_ip) = get_public_ip() {
+            println!("✓ Автоматически определён публичный IP: {}", public_ip);
+            format!("{}:{}", public_ip, server_config.network.bind_port)
+        } else {
+            println!("⚠ Не удалось автоматически определить публичный IP");
+            format!("your-server-ip:{}", server_config.network.bind_port)
+        }
     } else {
         server_config.bind_address()
     };

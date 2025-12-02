@@ -119,19 +119,37 @@ nano client.toml
 sudo ./target/release/llp-client
 ```
 
-### Автоматическая установка на Linux
+### Автоматическая установка на VPS
+
+**📖 Полная инструкция:** [VPS-SETUP.md](VPS-SETUP.md)
 
 ```bash
+# Быстрая установка на VPS
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source $HOME/.cargo/env
+
+git clone https://github.com/Salamander5876/LostLoveProtocol.git
+cd LostLoveProtocol
+bash fix-compilation.sh
+
 cd installer
-sudo bash install.sh
+bash install.sh
 ```
 
 Установщик автоматически:
-- Установит Rust (если не установлен)
+- Установит Rust и зависимости
 - Скомпилирует проект
 - Создаст конфигурацию
 - Настроит systemd сервис
 - Настроит IP forwarding и NAT
+
+После установки:
+```bash
+# Экспорт конфигурации для клиента (автоматически определит IP VPS)
+./target/release/llp-server --export-client-config client1.toml
+
+# Скачайте client1.toml на Windows и поместите в client\configs\
+```
 
 ## Конфигурация
 
