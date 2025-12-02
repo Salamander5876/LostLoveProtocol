@@ -1,0 +1,6 @@
+C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.csproj.AssemblyReference.cache
+C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.GeneratedMSBuildEditorConfig.editorconfig
+C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.AssemblyInfoInputs.cache
+C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.AssemblyInfo.cs
+C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.csproj.CoreCompileInputs.cache
+C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.sourcelink.json

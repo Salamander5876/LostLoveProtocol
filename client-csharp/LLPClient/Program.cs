@@ -45,7 +45,7 @@ class Program
         AnsiConsole.Write(
             new FigletText("LLP Client")
                 .Centered()
-                .Color(Color.Magenta));
+                .Color(Color.Purple));
 
         AnsiConsole.MarkupLine("[grey]LostLoveProtocol VPN Client v1.0.0[/]");
         AnsiConsole.MarkupLine("[grey]Windows .NET Implementation[/]");
@@ -81,7 +81,7 @@ class Program
 
             var table = new Table()
                 .Border(TableBorder.Rounded)
-                .BorderColor(Color.Cyan)
+                .BorderColor(Color.Blue)
                 .AddColumn(new TableColumn("[yellow]#[/]").Centered())
                 .AddColumn(new TableColumn("[yellow]Конфигурация[/]"))
                 .AddColumn(new TableColumn("[yellow]Размер[/]").RightAligned());
@@ -185,6 +185,9 @@ class Program
 
     static bool IsAdministrator()
     {
+        if (!OperatingSystem.IsWindows())
+            return false;
+
         var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
         var principal = new System.Security.Principal.WindowsPrincipal(identity);
         return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
