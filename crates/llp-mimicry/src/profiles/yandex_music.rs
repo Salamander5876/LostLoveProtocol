@@ -196,10 +196,13 @@ impl YandexMusicParser {
         let mut headers = [httparse::EMPTY_HEADER; 32];
         let mut req = httparse::Request::new(&mut headers);
 
-        let header_size = req
-            .parse(data)
-            .map_err(|e| MimicryError::ParseError(format!("HTTP parse error: {:?}", e)))?
-            .ok_or_else(|| MimicryError::ParseError("Incomplete HTTP request".to_string()))?;
+        let header_size = match req.parse(data)
+            .map_err(|e| MimicryError::ParseError(format!("HTTP parse error: {:?}", e)))? {
+            httparse::Status::Complete(size) => size,
+            httparse::Status::Partial => {
+                return Err(MimicryError::ParseError("Incomplete HTTP request".to_string()).into());
+            }
+        };
 
         if header_size >= data.len() {
             return Ok(Bytes::new());
@@ -213,10 +216,13 @@ impl YandexMusicParser {
         let mut headers = [httparse::EMPTY_HEADER; 32];
         let mut resp = httparse::Response::new(&mut headers);
 
-        let header_size = resp
-            .parse(data)
-            .map_err(|e| MimicryError::ParseError(format!("HTTP parse error: {:?}", e)))?
-            .ok_or_else(|| MimicryError::ParseError("Incomplete HTTP response".to_string()))?;
+        let header_size = match resp.parse(data)
+            .map_err(|e| MimicryError::ParseError(format!("HTTP parse error: {:?}", e)))? {
+            httparse::Status::Complete(size) => size,
+            httparse::Status::Partial => {
+                return Err(MimicryError::ParseError("Incomplete HTTP response".to_string()).into());
+            }
+        };
 
         if header_size >= data.len() {
             return Err(MimicryError::ParseError("No payload in response".to_string()).into());
