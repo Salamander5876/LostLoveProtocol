@@ -64,7 +64,7 @@ impl LlpListener {
 
         loop {
             match listener.listener.accept().await {
-                Ok((stream, addr)) => {
+                Ok((mut stream, addr)) => {
                     debug!("Новое подключение от {}", addr);
 
                     // Проверка лимита подключений

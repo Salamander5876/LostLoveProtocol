@@ -13,7 +13,7 @@ use listener::LlpListener;
 use llp_core::session::SessionManager;
 use nat::NatGateway;
 use router::Router;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -134,7 +134,7 @@ async fn main() {
 }
 
 /// Запуск сервера
-async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Создание менеджера сессий
     let session_manager = Arc::new(RwLock::new(SessionManager::with_lifetime(
         config.session_lifetime(),
@@ -235,17 +235,17 @@ fn export_client_config(
     let server_config = ServerConfig::from_file(server_config_path)?;
 
     // Получение внешнего адреса сервера
-    let server_address = if server_config.network.bind_ip == "0.0.0.0" {
+    let server_address = if server_config.network.bind_ip == IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)) {
         // Пытаемся автоматически определить публичный IP
         if let Some(public_ip) = get_public_ip() {
             println!("✓ Автоматически определён публичный IP: {}", public_ip);
-            format!("{}:{}", public_ip, server_config.network.bind_port)
+            format!("{}:{}", public_ip, server_config.network.port)
         } else {
             println!("⚠ Не удалось автоматически определить публичный IP");
-            format!("your-server-ip:{}", server_config.network.bind_port)
+            format!("your-server-ip:{}", server_config.network.port)
         }
     } else {
-        server_config.bind_address()
+        server_config.bind_address().to_string()
     };
 
     // Создание клиентской конфигурации
