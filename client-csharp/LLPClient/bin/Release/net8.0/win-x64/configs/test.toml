@@ -1,0 +1,22 @@
+[server]
+address = "185.250.181.20:8443"
+
+[vpn]
+interface_name = "llp0"
+ip_address = "10.8.0.2"
+subnet_mask = "255.255.255.0"
+mtu = 1420
+
+[security]
+mimicry_profile = "vk_video"
+enable_replay_protection = true
+max_packet_age_sec = 60
+
+[reconnect]
+enable = true
+initial_delay_ms = 1000
+max_delay_ms = 30000
+max_attempts = 0
+
+[logging]
+level = "info"

@@ -9,10 +9,8 @@ C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\LLPClient
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\LLPClient.runtimeconfig.json
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\LLPClient.dll
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\LLPClient.pdb
-C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\NSec.Cryptography.dll
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\Spectre.Console.dll
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\Tomlyn.dll
-C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\libsodium.dll
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\Microsoft.CSharp.dll
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\Microsoft.VisualBasic.Core.dll
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\Microsoft.VisualBasic.dll
@@ -201,3 +199,4 @@ C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\refint\LL
 C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.pdb
 C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\LLPClient.genruntimeconfig.cache
 C:\LostLoveProtocol\client-csharp\LLPClient\obj\Release\net8.0\win-x64\ref\LLPClient.dll
+C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\BouncyCastle.Crypto.dll

@@ -10,7 +10,7 @@
       "LLPClient/1.0.0": {
         "dependencies": {
           "Microsoft.NET.ILLink.Tasks": "8.0.20",
-          "NSec.Cryptography": "24.4.0",
+          "Portable.BouncyCastle": "1.9.0",
           "Spectre.Console": "0.49.1",
           "Tomlyn": "0.17.0",
           "runtimepack.Microsoft.NETCore.App.Runtime.win-x64": "8.0.20"
@@ -739,22 +739,12 @@
           }
         }
       },
-      "libsodium/1.0.19": {
-        "native": {
-          "runtimes/win-x64/native/libsodium.dll": {
-            "fileVersion": "1.0.19.0"
-          }
-        }
-      },
       "Microsoft.NET.ILLink.Tasks/8.0.20": {},
-      "NSec.Cryptography/24.4.0": {
-        "dependencies": {
-          "libsodium": "1.0.19"
-        },
+      "Portable.BouncyCastle/1.9.0": {
         "runtime": {
-          "lib/net6.0/NSec.Cryptography.dll": {
-            "assemblyVersion": "24.4.0.0",
-            "fileVersion": "24.4.0.0"
+          "lib/netstandard2.0/BouncyCastle.Crypto.dll": {
+            "assemblyVersion": "1.9.0.0",
+            "fileVersion": "1.9.0.1"
           }
         }
       },
@@ -787,13 +777,6 @@
       "serviceable": false,
       "sha512": ""
     },
-    "libsodium/1.0.19": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-tupm/HViwBN6Knd/gckR+cLaJGR39GLmiU4iDMM5hp/1BoczMr8fwJhSU+3/C2V4hi9nBK/4FICRKtTLU30TCA==",
-      "path": "libsodium/1.0.19",
-      "hashPath": "libsodium.1.0.19.nupkg.sha512"
-    },
     "Microsoft.NET.ILLink.Tasks/8.0.20": {
       "type": "package",
       "serviceable": true,
@@ -801,12 +784,12 @@
       "path": "microsoft.net.illink.tasks/8.0.20",
       "hashPath": "microsoft.net.illink.tasks.8.0.20.nupkg.sha512"
     },
-    "NSec.Cryptography/24.4.0": {
+    "Portable.BouncyCastle/1.9.0": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-R89OF0T5OY9QnPRoTsMCaPKMqtXcWKZSWAO4zyUaFHI+ZRMgXU7WaIwg/rPP3vOfdaLl8HdUHWkDB+2B9FOO7g==",
-      "path": "nsec.cryptography/24.4.0",
-      "hashPath": "nsec.cryptography.24.4.0.nupkg.sha512"
+      "sha512": "sha512-eZZBCABzVOek+id9Xy04HhmgykF0wZg9wpByzrWN7q8qEI0Qen9b7tfd7w8VA3dOeesumMG7C5ZPy0jk7PSRHw==",
+      "path": "portable.bouncycastle/1.9.0",
+      "hashPath": "portable.bouncycastle.1.9.0.nupkg.sha512"
     },
     "Spectre.Console/0.49.1": {
       "type": "package",

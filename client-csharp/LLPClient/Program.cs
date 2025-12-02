@@ -15,7 +15,11 @@ class Program
             {
                 AnsiConsole.MarkupLine("[red]✗[/] Требуются права администратора!");
                 AnsiConsole.MarkupLine("[yellow]ℹ[/] Запустите программу от имени администратора");
-                Console.ReadKey();
+                // Только ждём в интерактивном режиме
+                if (args.Length == 0)
+                {
+                    try { Console.ReadKey(); } catch { }
+                }
                 return 1;
             }
 

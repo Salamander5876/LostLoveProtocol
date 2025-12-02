@@ -5,7 +5,19 @@
       "Bash(where cargo:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet publish:*)",
+      "Bash(Select-String -Pattern \"LLPClient.exe|успешно|Ошибка|error\" -Context 0,1)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet remove package:*)",
+      "Bash(cargo build:*)",
+      "Bash(timeout 15 ./LLPClient.exe:*)",
+      "Bash(timeout 10 ./LLPClient.exe:*)",
+      "Bash(ssh root@185.250.181.20 \"journalctl -u llp-server -n 50 --no-pager\")",
+      "Bash(ssh root@185.250.181.20 \"journalctl -u llp-server -n 20 --no-pager | grep -E ''(Handshake|session|DA44E0)''\")",
+      "Bash(curl:*)",
+      "Bash(powershell -Command:*)"
     ],
     "deny": [],
     "ask": []

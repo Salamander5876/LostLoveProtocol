@@ -1,12 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "pXl9R1Xgi/M=",
+  "dgSpecHash": "hU1suqoXzSo=",
   "success": true,
   "projectFilePath": "C:\\LostLoveProtocol\\client-csharp\\LLPClient\\LLPClient.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\Vovan\\.nuget\\packages\\libsodium\\1.0.19\\libsodium.1.0.19.nupkg.sha512",
     "C:\\Users\\Vovan\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.20\\microsoft.net.illink.tasks.8.0.20.nupkg.sha512",
-    "C:\\Users\\Vovan\\.nuget\\packages\\nsec.cryptography\\24.4.0\\nsec.cryptography.24.4.0.nupkg.sha512",
+    "C:\\Users\\Vovan\\.nuget\\packages\\portable.bouncycastle\\1.9.0\\portable.bouncycastle.1.9.0.nupkg.sha512",
     "C:\\Users\\Vovan\\.nuget\\packages\\spectre.console\\0.49.1\\spectre.console.0.49.1.nupkg.sha512",
     "C:\\Users\\Vovan\\.nuget\\packages\\tomlyn\\0.17.0\\tomlyn.0.17.0.nupkg.sha512",
     "C:\\Users\\Vovan\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.20\\microsoft.netcore.app.runtime.win-x64.8.0.20.nupkg.sha512",

@@ -1,6 +1,7 @@
 using Spectre.Console;
 using System.Net;
 using System.Net.Sockets;
+using LLPClient.Crypto;
 
 namespace LLPClient;
 
@@ -10,6 +11,8 @@ public class VpnClient
     private TcpClient? _tcpClient;
     private NetworkStream? _stream;
     private TunDevice? _tunDevice;
+    private byte[]? _sessionKey;
+    private ulong? _sessionId;
 
     public VpnClient(ClientConfig config)
     {
@@ -54,17 +57,110 @@ public class VpnClient
         if (_stream == null)
             throw new InvalidOperationException("Not connected");
 
-        // TODO: Реализовать полный handshake протокол
-        // Пока заглушка - просто отправляем hello
-        var hello = System.Text.Encoding.UTF8.GetBytes("HELLO_LLP");
-        await _stream.WriteAsync(hello, cancellationToken);
+        // Определяем профиль мимикрии из конфигурации
+        var profile = _config.Security.MimicryProfile.ToLower() switch
+        {
+            "vk_video" => MimicryProfile.VkVideo,
+            "yandex_music" => MimicryProfile.YandexMusic,
+            "rutube" => MimicryProfile.RuTube,
+            "none" => MimicryProfile.None,
+            _ => MimicryProfile.VkVideo
+        };
 
-        // Ждём ответ
-        var buffer = new byte[1024];
-        var bytesRead = await _stream.ReadAsync(buffer, cancellationToken);
+        var handshake = new ClientHandshake(profile);
 
-        if (bytesRead == 0)
-            throw new Exception("Server closed connection during handshake");
+        // Шаг 1: Отправляем CLIENT_HELLO с length-prefix (u32 big-endian)
+        AnsiConsole.MarkupLine("[grey]  → Отправка CLIENT_HELLO...[/]");
+        var clientHelloBytes = handshake.Start();
+
+        // Отправляем длину (u32 big-endian), затем само сообщение
+        var lengthBytes = BitConverter.GetBytes((uint)clientHelloBytes.Length);
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(lengthBytes);
+
+        await _stream.WriteAsync(lengthBytes, cancellationToken);
+        await _stream.WriteAsync(clientHelloBytes, cancellationToken);
+
+        // Шаг 2: Получаем SERVER_HELLO (с length-prefix)
+        AnsiConsole.MarkupLine("[grey]  → Ожидание SERVER_HELLO...[/]");
+
+        // Читаем длину (u32 big-endian)
+        var lengthBuf = new byte[4];
+        await ReadExactAsync(_stream, lengthBuf, cancellationToken);
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(lengthBuf);
+        var messageLength = BitConverter.ToUInt32(lengthBuf, 0);
+
+        if (messageLength != ServerHello.MESSAGE_SIZE)
+            throw new Exception($"Unexpected SERVER_HELLO length: {messageLength} != {ServerHello.MESSAGE_SIZE}");
+
+        // Читаем само сообщение
+        var serverHelloBuffer = new byte[ServerHello.MESSAGE_SIZE];
+        var bytesRead = await ReadExactAsync(_stream, serverHelloBuffer, cancellationToken);
+
+        if (bytesRead < ServerHello.MESSAGE_SIZE)
+            throw new Exception($"Incomplete SERVER_HELLO: {bytesRead} < {ServerHello.MESSAGE_SIZE}");
+
+        _sessionId = handshake.ProcessServerHello(serverHelloBuffer);
+        AnsiConsole.MarkupLine($"[grey]  ✓ Session ID: {_sessionId:X16}[/]");
+
+        // Шаг 3: Отправляем CLIENT_VERIFY (с length-prefix)
+        AnsiConsole.MarkupLine("[grey]  → Отправка CLIENT_VERIFY...[/]");
+        var clientVerifyBytes = handshake.SendClientVerify();
+
+        lengthBytes = BitConverter.GetBytes((uint)clientVerifyBytes.Length);
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(lengthBytes);
+
+        await _stream.WriteAsync(lengthBytes, cancellationToken);
+        await _stream.WriteAsync(clientVerifyBytes, cancellationToken);
+
+        // Шаг 4: Получаем SERVER_VERIFY (с length-prefix)
+        AnsiConsole.MarkupLine("[grey]  → Ожидание SERVER_VERIFY...[/]");
+
+        // Читаем длину
+        lengthBuf = new byte[4];
+        await ReadExactAsync(_stream, lengthBuf, cancellationToken);
+        if (BitConverter.IsLittleEndian)
+            Array.Reverse(lengthBuf);
+        messageLength = BitConverter.ToUInt32(lengthBuf, 0);
+
+        if (messageLength != ServerVerify.MESSAGE_SIZE)
+            throw new Exception($"Unexpected SERVER_VERIFY length: {messageLength} != {ServerVerify.MESSAGE_SIZE}");
+
+        // Читаем сообщение
+        var serverVerifyBuffer = new byte[ServerVerify.MESSAGE_SIZE];
+        bytesRead = await ReadExactAsync(_stream, serverVerifyBuffer, cancellationToken);
+
+        if (bytesRead < ServerVerify.MESSAGE_SIZE)
+            throw new Exception($"Incomplete SERVER_VERIFY: {bytesRead} < {ServerVerify.MESSAGE_SIZE}");
+
+        handshake.ProcessServerVerify(serverVerifyBuffer);
+
+        // Сохраняем сессионный ключ
+        _sessionKey = handshake.SessionKey;
+
+        AnsiConsole.MarkupLine("[green]  ✓ Handshake успешно завершён![/]");
+    }
+
+    /// <summary>
+    /// Читает точное количество байтов из потока
+    /// </summary>
+    private static async Task<int> ReadExactAsync(NetworkStream stream, byte[] buffer, CancellationToken cancellationToken)
+    {
+        var totalRead = 0;
+        while (totalRead < buffer.Length)
+        {
+            var bytesRead = await stream.ReadAsync(
+                buffer.AsMemory(totalRead, buffer.Length - totalRead),
+                cancellationToken);
+
+            if (bytesRead == 0)
+                return totalRead; // Соединение закрыто
+
+            totalRead += bytesRead;
+        }
+        return totalRead;
     }
 
     public async Task RunAsync(CancellationToken cancellationToken)

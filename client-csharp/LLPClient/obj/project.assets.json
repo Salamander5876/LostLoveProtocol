@@ -2,67 +2,23 @@
   "version": 3,
   "targets": {
     "net8.0": {
-      "libsodium/1.0.19": {
-        "type": "package",
-        "runtimeTargets": {
-          "runtimes/linux-arm/native/libsodium.so": {
-            "assetType": "native",
-            "rid": "linux-arm"
-          },
-          "runtimes/linux-arm64/native/libsodium.so": {
-            "assetType": "native",
-            "rid": "linux-arm64"
-          },
-          "runtimes/linux-musl-arm/native/libsodium.so": {
-            "assetType": "native",
-            "rid": "linux-musl-arm"
-          },
-          "runtimes/linux-musl-arm64/native/libsodium.so": {
-            "assetType": "native",
-            "rid": "linux-musl-arm64"
-          },
-          "runtimes/linux-musl-x64/native/libsodium.so": {
-            "assetType": "native",
-            "rid": "linux-musl-x64"
-          },
-          "runtimes/linux-x64/native/libsodium.so": {
-            "assetType": "native",
-            "rid": "linux-x64"
-          },
-          "runtimes/osx-arm64/native/libsodium.dylib": {
-            "assetType": "native",
-            "rid": "osx-arm64"
-          },
-          "runtimes/osx-x64/native/libsodium.dylib": {
-            "assetType": "native",
-            "rid": "osx-x64"
-          },
-          "runtimes/win-x64/native/libsodium.dll": {
-            "assetType": "native",
-            "rid": "win-x64"
-          },
-          "runtimes/win-x86/native/libsodium.dll": {
-            "assetType": "native",
-            "rid": "win-x86"
-          }
-        }
-      },
       "Microsoft.NET.ILLink.Tasks/8.0.20": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "NSec.Cryptography/24.4.0": {
+      "Portable.BouncyCastle/1.9.0": {
         "type": "package",
-        "dependencies": {
-          "libsodium": "[1.0.19, 1.0.20)"
-        },
         "compile": {
-          "lib/net6.0/NSec.Cryptography.dll": {}
+          "lib/netstandard2.0/BouncyCastle.Crypto.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net6.0/NSec.Cryptography.dll": {}
+          "lib/netstandard2.0/BouncyCastle.Crypto.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Spectre.Console/0.49.1": {
@@ -93,28 +49,23 @@
       }
     },
     "net8.0/win-x64": {
-      "libsodium/1.0.19": {
-        "type": "package",
-        "native": {
-          "runtimes/win-x64/native/libsodium.dll": {}
-        }
-      },
       "Microsoft.NET.ILLink.Tasks/8.0.20": {
         "type": "package",
         "build": {
           "build/Microsoft.NET.ILLink.Tasks.props": {}
         }
       },
-      "NSec.Cryptography/24.4.0": {
+      "Portable.BouncyCastle/1.9.0": {
         "type": "package",
-        "dependencies": {
-          "libsodium": "[1.0.19, 1.0.20)"
-        },
         "compile": {
-          "lib/net6.0/NSec.Cryptography.dll": {}
+          "lib/netstandard2.0/BouncyCastle.Crypto.dll": {
+            "related": ".xml"
+          }
         },
         "runtime": {
-          "lib/net6.0/NSec.Cryptography.dll": {}
+          "lib/netstandard2.0/BouncyCastle.Crypto.dll": {
+            "related": ".xml"
+          }
         }
       },
       "Spectre.Console/0.49.1": {
@@ -146,30 +97,6 @@
     }
   },
   "libraries": {
-    "libsodium/1.0.19": {
-      "sha512": "tupm/HViwBN6Knd/gckR+cLaJGR39GLmiU4iDMM5hp/1BoczMr8fwJhSU+3/C2V4hi9nBK/4FICRKtTLU30TCA==",
-      "type": "package",
-      "path": "libsodium/1.0.19",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "AUTHORS",
-        "ChangeLog",
-        "LICENSE",
-        "libsodium.1.0.19.nupkg.sha512",
-        "libsodium.nuspec",
-        "runtimes/linux-arm/native/libsodium.so",
-        "runtimes/linux-arm64/native/libsodium.so",
-        "runtimes/linux-musl-arm/native/libsodium.so",
-        "runtimes/linux-musl-arm64/native/libsodium.so",
-        "runtimes/linux-musl-x64/native/libsodium.so",
-        "runtimes/linux-x64/native/libsodium.so",
-        "runtimes/osx-arm64/native/libsodium.dylib",
-        "runtimes/osx-x64/native/libsodium.dylib",
-        "runtimes/win-x64/native/libsodium.dll",
-        "runtimes/win-x86/native/libsodium.dll"
-      ]
-    },
     "Microsoft.NET.ILLink.Tasks/8.0.20": {
       "sha512": "Rhcto2AjGvTO62+/VTmBpumBOmqIGp7nYEbTbmEXkCq4yPGxV8whju3/HsIA/bKyo2+DggaYk5+/8sxb1AbPTw==",
       "type": "package",
@@ -221,19 +148,19 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "NSec.Cryptography/24.4.0": {
-      "sha512": "R89OF0T5OY9QnPRoTsMCaPKMqtXcWKZSWAO4zyUaFHI+ZRMgXU7WaIwg/rPP3vOfdaLl8HdUHWkDB+2B9FOO7g==",
+    "Portable.BouncyCastle/1.9.0": {
+      "sha512": "eZZBCABzVOek+id9Xy04HhmgykF0wZg9wpByzrWN7q8qEI0Qen9b7tfd7w8VA3dOeesumMG7C5ZPy0jk7PSRHw==",
       "type": "package",
-      "path": "nsec.cryptography/24.4.0",
+      "path": "portable.bouncycastle/1.9.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "LICENSE",
-        "NOTICE",
-        "lib/net6.0/NSec.Cryptography.dll",
-        "nsec.cryptography.24.4.0.nupkg.sha512",
-        "nsec.cryptography.nuspec",
-        "nsec.png"
+        "lib/net40/BouncyCastle.Crypto.dll",
+        "lib/net40/BouncyCastle.Crypto.xml",
+        "lib/netstandard2.0/BouncyCastle.Crypto.dll",
+        "lib/netstandard2.0/BouncyCastle.Crypto.xml",
+        "portable.bouncycastle.1.9.0.nupkg.sha512",
+        "portable.bouncycastle.nuspec"
       ]
     },
     "Spectre.Console/0.49.1": {
@@ -277,7 +204,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "Microsoft.NET.ILLink.Tasks >= 8.0.20",
-      "NSec.Cryptography >= 24.4.0",
+      "Portable.BouncyCastle >= 1.9.0",
       "Spectre.Console >= 0.49.1",
       "Tomlyn >= 0.17.0"
     ]
@@ -338,9 +265,9 @@
             "version": "[8.0.20, )",
             "autoReferenced": true
           },
-          "NSec.Cryptography": {
+          "Portable.BouncyCastle": {
             "target": "Package",
-            "version": "[24.4.0, )"
+            "version": "[1.9.0, )"
           },
           "Spectre.Console": {
             "target": "Package",

@@ -1,3 +1,2 @@
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\publish\LLPClient.pdb
-C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\publish\libsodium.dll
 C:\LostLoveProtocol\client-csharp\LLPClient\bin\Release\net8.0\win-x64\publish\LLPClient.exe
