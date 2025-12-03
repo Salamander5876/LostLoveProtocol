@@ -38,6 +38,7 @@ rand = { workspace = true }
 # Работа с IP и сетью
 pnet = "0.34"
 pnet_packet = "0.34"
+tun-tap = { workspace = true }
 
 # Async channels
 async-channel = "2.1"

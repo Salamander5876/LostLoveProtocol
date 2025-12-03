@@ -9,7 +9,9 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::debug;
+use tracing::{debug, info};
+
+use crate::tun_device::SharedTunDevice;
 
 /// Запись NAT таблицы
 #[derive(Debug, Clone)]
@@ -34,6 +36,8 @@ pub struct NatGateway {
     nat_table: Arc<RwLock<HashMap<(IpAddr, u16), NatEntry>>>,
     /// Внешний IP адрес сервера
     external_ip: IpAddr,
+    /// TUN device для отправки пакетов в интернет
+    tun_device: Option<SharedTunDevice>,
 }
 
 impl NatGateway {
@@ -42,7 +46,14 @@ impl NatGateway {
         Self {
             nat_table: Arc::new(RwLock::new(HashMap::new())),
             external_ip,
+            tun_device: None,
         }
+    }
+
+    /// Установить TUN device
+    pub fn set_tun_device(&mut self, tun: SharedTunDevice) {
+        self.tun_device = Some(tun);
+        info!("TUN device подключен к NAT gateway");
     }
 
     /// Обработка исходящего пакета (из VPN в интернет)
@@ -109,21 +120,11 @@ impl NatGateway {
         packet: &[u8],
         _session_id: u64,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        debug!("NAT: Маршрутизация IP пакета ({} байт)", packet.len());
-
-        // TODO: Реализовать отправку в TUN interface на сервере
-        // Для полноценной работы нужно:
-        // 1. Создать TUN interface на сервере (tunio crate)
-        // 2. Настроить IP forwarding: sysctl -w net.ipv4.ip_forward=1
-        // 3. Настроить iptables NAT:
-        //    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
-        // 4. Записать пакет в TUN interface
-
-        // Временная заглушка - просто логируем
+        // Логируем для отладки
         if let Some(src_ip) = extract_src_ip(packet) {
             if let Some(dst_ip) = extract_dst_ip(packet) {
                 debug!(
-                    "NAT: Пакет {} -> {} ({} байт)",
+                    "NAT: Маршрутизация {} -> {} ({} байт)",
                     src_ip,
                     dst_ip,
                     packet.len()
@@ -131,7 +132,21 @@ impl NatGateway {
             }
         }
 
-        Ok(())
+        // Отправляем пакет в TUN interface
+        if let Some(tun) = &self.tun_device {
+            let mut tun_lock = tun.write().await;
+            match tun_lock.write_packet(packet) {
+                Ok(written) => {
+                    debug!("NAT: Отправлено {} байт в TUN", written);
+                    Ok(())
+                }
+                Err(e) => {
+                    Err(format!("Ошибка записи в TUN: {}", e).into())
+                }
+            }
+        } else {
+            Err("TUN device не настроен".into())
+        }
     }
 }
 

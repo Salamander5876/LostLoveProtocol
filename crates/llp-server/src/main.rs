@@ -7,6 +7,7 @@ mod config;
 mod listener;
 mod nat;
 mod router;
+mod tun_device;
 
 use clap::Parser;
 use config::ServerConfig;
@@ -18,8 +19,9 @@ use std::net::{IpAddr, Ipv4Addr};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info, Level};
+use tracing::{error, info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
+use tun_device::ServerTunDevice;
 
 /// Аргументы командной строки
 #[derive(Parser, Debug)]
@@ -141,23 +143,47 @@ async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error:
         config.session_lifetime(),
     )));
 
+    // Создание TUN interface
+    let tun_device = match ServerTunDevice::new("llp0".to_string()) {
+        Ok(mut tun) => {
+            if let Err(e) = tun.configure_ip("10.8.0.1", "255.255.255.0") {
+                warn!("Не удалось настроить TUN interface: {}", e);
+                warn!("VPN будет работать без маршрутизации");
+                None
+            } else {
+                Some(Arc::new(RwLock::new(tun)))
+            }
+        }
+        Err(e) => {
+            warn!("Не удалось создать TUN interface: {}", e);
+            warn!("VPN будет работать без маршрутизации");
+            None
+        }
+    };
+
+    // Создание NAT gateway
+    let mut nat = NatGateway::default();
+    if let Some(ref tun) = tun_device {
+        nat.set_tun_device(Arc::clone(tun));
+        info!("NAT gateway настроен с TUN interface");
+    }
+    let nat_gateway = Arc::new(RwLock::new(nat));
+
     // Создание роутера
     let router = Router::new(Arc::clone(&session_manager));
     let router_handle = router.handle();
-
-    // Создание NAT gateway
-    let _nat = NatGateway::default(); // TODO: Получить внешний IP
 
     // Запуск роутера в отдельной задаче
     tokio::spawn(async move {
         router.run().await;
     });
 
-    // Создание и запуск listener
+    // Создание и запуск listener с NAT gateway
     let listener = LlpListener::bind(
         Arc::clone(&config),
         session_manager.clone(),
         router_handle,
+        Some(nat_gateway.clone()),
     )
     .await?;
 

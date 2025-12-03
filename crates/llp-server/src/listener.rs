@@ -21,6 +21,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::client_handler::ClientHandler;
 use crate::config::ServerConfig;
+use crate::nat::NatGateway;
 use crate::router::RouterHandle;
 
 /// Результат обработки подключения
@@ -36,6 +37,8 @@ pub struct LlpListener {
     session_manager: Arc<RwLock<SessionManager>>,
     /// Роутер для передачи данных
     router: RouterHandle,
+    /// NAT gateway для маршрутизации
+    nat_gateway: Option<Arc<RwLock<NatGateway>>>,
 }
 
 impl LlpListener {
@@ -44,6 +47,7 @@ impl LlpListener {
         config: Arc<ServerConfig>,
         session_manager: Arc<RwLock<SessionManager>>,
         router: RouterHandle,
+        nat_gateway: Option<Arc<RwLock<NatGateway>>>,
     ) -> Result<Self> {
         let bind_addr = config.bind_address();
         let listener = TcpListener::bind(bind_addr).await?;
@@ -55,6 +59,7 @@ impl LlpListener {
             listener,
             session_manager,
             router,
+            nat_gateway,
         })
     }
 
@@ -117,7 +122,8 @@ impl LlpListener {
         info!("Клиент зарегистрирован: session_id={}", session_id);
 
         // Запуск обработчика клиента в отдельной задаче
-        let handler = ClientHandler::new(session_id, stream, session_key, None); // TODO: передать NAT gateway
+        let nat_clone = self.nat_gateway.clone();
+        let handler = ClientHandler::new(session_id, stream, session_key, nat_clone);
         tokio::spawn(async move {
             if let Err(e) = handler.run().await {
                 error!("Ошибка обработчика клиента {}: {}", session_id, e);
@@ -212,7 +218,7 @@ mod tests {
         test_config.network.port = 0; // OS выберет свободный порт
         let test_config = Arc::new(test_config);
 
-        let result = LlpListener::bind(test_config, session_manager, router_handle).await;
+        let result = LlpListener::bind(test_config, session_manager, router_handle, None).await;
         assert!(result.is_ok());
     }
 }
