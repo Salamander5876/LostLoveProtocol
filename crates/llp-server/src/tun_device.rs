@@ -3,10 +3,9 @@
 //! Этот модуль создаёт TUN interface, через который пакеты от клиентов
 //! отправляются в интернет через NAT
 
-use std::io::{Read, Write};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info};
+use tracing::info;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -78,7 +77,7 @@ impl ServerTunDevice {
     pub fn write_packet(&mut self, packet: &[u8]) -> Result<usize> {
         if let Some(ref mut iface) = self.iface {
             iface
-                .write(packet)
+                .send(packet)
                 .map_err(|e| format!("Ошибка записи в TUN: {}", e).into())
         } else {
             Err("TUN interface не инициализирован".into())
@@ -89,7 +88,7 @@ impl ServerTunDevice {
     pub fn read_packet(&mut self, buffer: &mut [u8]) -> Result<usize> {
         if let Some(ref mut iface) = self.iface {
             iface
-                .read(buffer)
+                .recv(buffer)
                 .map_err(|e| format!("Ошибка чтения из TUN: {}", e).into())
         } else {
             Err("TUN interface не инициализирован".into())

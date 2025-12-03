@@ -145,7 +145,7 @@ async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error:
 
     // Создание TUN interface
     let tun_device = match ServerTunDevice::new("llp0".to_string()) {
-        Ok(mut tun) => {
+        Ok(tun) => {
             if let Err(e) = tun.configure_ip("10.8.0.1", "255.255.255.0") {
                 warn!("Не удалось настроить TUN interface: {}", e);
                 warn!("VPN будет работать без маршрутизации");
