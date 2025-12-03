@@ -6,7 +6,6 @@
 //! - Извлечение IP пакетов
 //! - Маршрутизацию через NAT gateway
 
-use bytes::{Bytes, BytesMut};
 use llp_core::crypto::{AeadCipher, SessionKey, CHACHA20_NONCE_SIZE, POLY1305_TAG_SIZE};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -51,7 +50,7 @@ impl ClientHandler {
         info!("Запущен обработчик для клиента {}", self.session_id);
 
         // Создаём дешифратор
-        let mut decrypt_cipher = AeadCipher::new(&self.session_key, self.session_id);
+        let decrypt_cipher = AeadCipher::new(&self.session_key, self.session_id);
 
         loop {
             // Читаем длину пакета (big-endian u32)

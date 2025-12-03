@@ -18,7 +18,10 @@
       "Bash(ssh root@185.250.181.20 \"journalctl -u llp-server -n 20 --no-pager | grep -E ''(Handshake|session|DA44E0)''\")",
       "Bash(curl:*)",
       "Bash(powershell -Command:*)",
-      "Bash(cargo clean:*)"
+      "Bash(cargo clean:*)",
+      "Bash(ssh root@185.250.181.20 \"cd /root/LostLoveProtocol && git pull && cargo build --release -p llp-server 2>&1 | tail -50\")",
+      "Bash(ssh-keygen:*)",
+      "Bash(ssh:*)"
     ],
     "deny": [],
     "ask": []
