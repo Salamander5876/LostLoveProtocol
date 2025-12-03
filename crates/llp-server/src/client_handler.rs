@@ -100,17 +100,18 @@ impl ClientHandler {
         let session_id = self.session_id;
         let send_task = tokio::spawn(async move {
             let mut send_counter = 0u64;
-            let encrypt_cipher = AeadCipher::new(&session_key_clone, session_id);
 
             while let Some(ip_packet) = rx.recv().await {
+                // Создаём новый шифратор для каждого пакета с правильным счётчиком
+                let mut encrypt_cipher = AeadCipher::new(&session_key_clone, session_id);
+
                 // Пропускаем счётчик до текущего
-                let mut cipher = encrypt_cipher.clone();
                 for _ in 0..send_counter {
-                    let _ = cipher.encrypt(&[], &[]);
+                    let _ = encrypt_cipher.encrypt(&[], &[]);
                 }
 
                 // Шифруем IP пакет
-                let ciphertext_with_tag = match cipher.encrypt(&ip_packet, &[]) {
+                let ciphertext_with_tag = match encrypt_cipher.encrypt(&ip_packet, &[]) {
                     Ok(data) => data,
                     Err(e) => {
                         error!("Ошибка шифрования пакета для {}: {}", session_id, e);
