@@ -13,6 +13,7 @@ public class VpnClient
     private TunDevice? _tunDevice;
     private byte[]? _sessionKey;
     private ulong? _sessionId;
+    private PacketEncryption? _encryption;
 
     public VpnClient(ClientConfig config)
     {
@@ -137,8 +138,14 @@ public class VpnClient
 
         handshake.ProcessServerVerify(serverVerifyBuffer);
 
-        // Сохраняем сессионный ключ
+        // Сохраняем сессионный ключ и инициализируем шифрование
         _sessionKey = handshake.SessionKey;
+
+        if (_sessionKey != null && _sessionId.HasValue)
+        {
+            _encryption = new PacketEncryption(_sessionKey, _sessionId.Value);
+            AnsiConsole.MarkupLine("[green]  ✓ Шифрование инициализировано (ChaCha20-Poly1305)[/]");
+        }
 
         AnsiConsole.MarkupLine("[green]  ✓ Handshake успешно завершён![/]");
     }
@@ -194,12 +201,18 @@ public class VpnClient
                         try
                         {
                             var bytesRead = await _tunDevice.ReadAsync(buffer, cancellationToken);
-                            if (bytesRead > 0)
+                            if (bytesRead > 0 && _encryption != null)
                             {
-                                // TODO: Шифрование и упаковка в мимикрию
-                                await _stream!.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                                // Шифруем IP пакет
+                                var ipPacket = new byte[bytesRead];
+                                Array.Copy(buffer, 0, ipPacket, 0, bytesRead);
 
-                                bytesSent += bytesRead;
+                                var encryptedPacket = _encryption.Encrypt(ipPacket);
+
+                                // Отправляем зашифрованный пакет на сервер
+                                await _stream!.WriteAsync(encryptedPacket, cancellationToken);
+
+                                bytesSent += encryptedPacket.Length;
                                 packetsSent++;
                             }
                         }
@@ -217,22 +230,30 @@ public class VpnClient
                 // Задача чтения с сервера и записи в TUN
                 var serverToTunTask = Task.Run(async () =>
                 {
-                    var buffer = new byte[_config.Vpn.Mtu + 100];
+                    var buffer = new byte[65536]; // Большой буфер для зашифрованных пакетов
 
                     while (!cancellationToken.IsCancellationRequested)
                     {
                         try
                         {
                             var bytesRead = await _stream!.ReadAsync(buffer, cancellationToken);
-                            if (bytesRead > 0)
+                            if (bytesRead > 0 && _encryption != null)
                             {
-                                // TODO: Расшифровка и распаковка мимикрии
-                                await _tunDevice.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                                // Дешифруем пакет
+                                var encryptedPacket = new byte[bytesRead];
+                                Array.Copy(buffer, 0, encryptedPacket, 0, bytesRead);
 
-                                bytesReceived += bytesRead;
-                                packetsReceived++;
+                                var decryptedPacket = _encryption.Decrypt(encryptedPacket);
+                                if (decryptedPacket != null && decryptedPacket.Length > 0)
+                                {
+                                    // Записываем IP пакет в TUN
+                                    await _tunDevice.WriteAsync(decryptedPacket, cancellationToken);
+
+                                    bytesReceived += decryptedPacket.Length;
+                                    packetsReceived++;
+                                }
                             }
-                            else
+                            else if (bytesRead == 0)
                             {
                                 throw new Exception("Server closed connection");
                             }

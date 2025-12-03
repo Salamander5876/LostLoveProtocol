@@ -19,6 +19,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, warn};
 
+use crate::client_handler::ClientHandler;
 use crate::config::ServerConfig;
 use crate::router::RouterHandle;
 
@@ -110,15 +111,18 @@ impl LlpListener {
         // Создание сессии
         {
             let mut manager = self.session_manager.write().await;
-            manager.add_session(session_id, session_key, mimicry_profile)?;
+            manager.add_session(session_id, session_key.clone(), mimicry_profile)?;
         }
 
-        // Регистрация в роутере
-        self.router
-            .register_client(session_id, stream, mimicry_profile)
-            .await?;
-
         info!("Клиент зарегистрирован: session_id={}", session_id);
+
+        // Запуск обработчика клиента в отдельной задаче
+        let handler = ClientHandler::new(session_id, stream, session_key, None); // TODO: передать NAT gateway
+        tokio::spawn(async move {
+            if let Err(e) = handler.run().await {
+                error!("Ошибка обработчика клиента {}: {}", session_id, e);
+            }
+        });
 
         Ok(())
     }

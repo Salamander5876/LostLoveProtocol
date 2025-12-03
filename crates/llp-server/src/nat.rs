@@ -99,6 +99,40 @@ impl NatGateway {
         let mut table = self.nat_table.write().await;
         table.clear(); // Временная заглушка
     }
+
+    /// Маршрутизировать IP пакет в интернет
+    ///
+    /// Принимает IP пакет от клиента и отправляет его в интернет через TUN interface
+    #[allow(dead_code)]
+    pub async fn route_packet(
+        &mut self,
+        packet: &[u8],
+        _session_id: u64,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        debug!("NAT: Маршрутизация IP пакета ({} байт)", packet.len());
+
+        // TODO: Реализовать отправку в TUN interface на сервере
+        // Для полноценной работы нужно:
+        // 1. Создать TUN interface на сервере (tunio crate)
+        // 2. Настроить IP forwarding: sysctl -w net.ipv4.ip_forward=1
+        // 3. Настроить iptables NAT:
+        //    iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
+        // 4. Записать пакет в TUN interface
+
+        // Временная заглушка - просто логируем
+        if let Some(src_ip) = extract_src_ip(packet) {
+            if let Some(dst_ip) = extract_dst_ip(packet) {
+                debug!(
+                    "NAT: Пакет {} -> {} ({} байт)",
+                    src_ip,
+                    dst_ip,
+                    packet.len()
+                );
+            }
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for NatGateway {

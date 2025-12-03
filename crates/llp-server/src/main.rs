@@ -2,6 +2,7 @@
 //!
 //! VPN сервер с поддержкой мимикрии под российские сервисы.
 
+mod client_handler;
 mod config;
 mod listener;
 mod nat;

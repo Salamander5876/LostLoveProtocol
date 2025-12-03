@@ -17,7 +17,8 @@
       "Bash(ssh root@185.250.181.20 \"journalctl -u llp-server -n 50 --no-pager\")",
       "Bash(ssh root@185.250.181.20 \"journalctl -u llp-server -n 20 --no-pager | grep -E ''(Handshake|session|DA44E0)''\")",
       "Bash(curl:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(cargo clean:*)"
     ],
     "deny": [],
     "ask": []

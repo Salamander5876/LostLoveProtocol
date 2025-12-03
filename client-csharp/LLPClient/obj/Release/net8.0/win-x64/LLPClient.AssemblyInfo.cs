@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LLPClient")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3fe43da6f7eb2d63fe448bef61778b048a3ab1b8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c58949d83928d4b35f9d016ff95bee10801b1359")]
 [assembly: System.Reflection.AssemblyProductAttribute("LLPClient")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LLPClient")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

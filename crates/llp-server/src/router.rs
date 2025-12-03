@@ -209,13 +209,38 @@ impl Router {
 
     /// Цикл чтения от клиента
     async fn client_read_loop(
-        _session_id: u64,
-        _handle: RouterHandle,
-        _session_manager: Arc<RwLock<SessionManager>>,
+        session_id: u64,
+        handle: RouterHandle,
+        session_manager: Arc<RwLock<SessionManager>>,
     ) -> Result<()> {
-        // TODO: Реализовать чтение пакетов от клиента
-        // Пока заглушка
+        use tokio::io::AsyncReadExt;
+        use llp_core::crypto::AeadCipher;
+
+        // Получаем сессию и создаём cipher
+        let (session_key, session_id_u64) = {
+            let manager = session_manager.read().await;
+            let session = manager
+                .get_session(session_id)
+                .ok_or("Сессия не найдена")?;
+            (session.session_key().clone(), session.session_id())
+        };
+
+        // Получаем stream из clients
+        // NOTE: Это упрощённая версия - в production нужно передавать stream явно
+        // Пока используем простой формат: [length:u32][nonce:12][ciphertext+tag]
+
+        info!("Запущен цикл чтения для клиента {}", session_id);
+
+        // TODO: Реализовать чтение через stream из ClientInfo
+        // Для этого нужно рефакторить структуру чтобы можно было брать stream
+        // Пока логируем что клиент активен
         tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+
+        info!("Цикл чтения завершён для клиента {}", session_id);
+
+        // Удаляем клиента при отключении
+        let _ = handle.remove_client(session_id).await;
+
         Ok(())
     }
 
