@@ -5,14 +5,18 @@
 //! - Дешифровку ChaCha20-Poly1305
 //! - Извлечение IP пакетов
 //! - Маршрутизацию через NAT gateway
+//! - Отправку обратного трафика клиенту
 
+use bytes::Bytes;
 use llp_core::crypto::{AeadCipher, SessionKey, CHACHA20_NONCE_SIZE, POLY1305_TAG_SIZE};
+use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::sync::RwLock;
+use tokio::sync::{mpsc, RwLock};
 use tracing::{debug, error, info, warn};
 
+use crate::client_registry::ClientRegistry;
 use crate::nat::NatGateway;
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
@@ -23,8 +27,11 @@ pub struct ClientHandler {
     stream: TcpStream,
     session_key: SessionKey,
     nat_gateway: Option<Arc<RwLock<NatGateway>>>,
+    client_registry: Arc<ClientRegistry>,
     send_counter: u64,
     receive_counter: u64,
+    /// VPN IP адрес клиента
+    vpn_ip: IpAddr,
 }
 
 impl ClientHandler {
@@ -34,34 +41,139 @@ impl ClientHandler {
         stream: TcpStream,
         session_key: SessionKey,
         nat_gateway: Option<Arc<RwLock<NatGateway>>>,
+        client_registry: Arc<ClientRegistry>,
     ) -> Self {
+        // Назначаем VPN IP на основе session_id
+        // TODO: Использовать пул IP адресов для распределения
+        let vpn_ip = IpAddr::V4(Ipv4Addr::new(
+            10,
+            8,
+            0,
+            // Простое распределение: 10.8.0.2 - 10.8.0.254
+            (2 + (session_id % 253)) as u8,
+        ));
+
         Self {
             session_id,
             stream,
             session_key,
             nat_gateway,
+            client_registry,
             send_counter: 0,
             receive_counter: 0,
+            vpn_ip,
         }
     }
 
     /// Запустить обработку клиента (основной цикл)
     pub async fn run(mut self) -> Result<()> {
-        info!("Запущен обработчик для клиента {}", self.session_id);
+        info!(
+            "Запущен обработчик для клиента {} (VPN IP: {})",
+            self.session_id, self.vpn_ip
+        );
+
+        // Создаём канал для получения пакетов от TUN
+        let (tx, mut rx) = mpsc::unbounded_channel::<Bytes>();
+
+        // Регистрируем клиента в реестре
+        if let Err(e) = self.client_registry.register_client(self.vpn_ip, tx).await {
+            error!(
+                "Не удалось зарегистрировать клиента {} в реестре: {}",
+                self.session_id, e
+            );
+            return Err(e);
+        }
+
+        info!(
+            "Клиент {} зарегистрирован в реестре с IP {}",
+            self.session_id, self.vpn_ip
+        );
 
         // Создаём дешифратор
         let decrypt_cipher = AeadCipher::new(&self.session_key, self.session_id);
 
+        // Разделяем stream на read/write половины
+        let (mut read_half, mut write_half) = tokio::io::split(self.stream);
+
+        // Spawn задачу для отправки пакетов клиенту (TUN -> Client)
+        let session_key_clone = self.session_key.clone();
+        let session_id = self.session_id;
+        let send_task = tokio::spawn(async move {
+            let mut send_counter = 0u64;
+            let encrypt_cipher = AeadCipher::new(&session_key_clone, session_id);
+
+            while let Some(ip_packet) = rx.recv().await {
+                // Пропускаем счётчик до текущего
+                let mut cipher = encrypt_cipher.clone();
+                for _ in 0..send_counter {
+                    let _ = cipher.encrypt(&[], &[]);
+                }
+
+                // Шифруем IP пакет
+                let ciphertext_with_tag = match cipher.encrypt(&ip_packet, &[]) {
+                    Ok(data) => data,
+                    Err(e) => {
+                        error!("Ошибка шифрования пакета для {}: {}", session_id, e);
+                        continue;
+                    }
+                };
+
+                // Строим nonce
+                let mut nonce = [0u8; CHACHA20_NONCE_SIZE];
+                nonce[0..8].copy_from_slice(&send_counter.to_le_bytes());
+                nonce[8..12].copy_from_slice(&((session_id & 0xFFFFFFFF) as u32).to_le_bytes());
+
+                // Формат: [length:u32][nonce:12][ciphertext+tag]
+                let packet_len = (CHACHA20_NONCE_SIZE + ciphertext_with_tag.len()) as u32;
+
+                // Отправляем пакет
+                if let Err(e) = write_half.write_u32(packet_len).await {
+                    error!("Ошибка отправки длины клиенту {}: {}", session_id, e);
+                    break;
+                }
+
+                if let Err(e) = write_half.write_all(&nonce).await {
+                    error!("Ошибка отправки nonce клиенту {}: {}", session_id, e);
+                    break;
+                }
+
+                if let Err(e) = write_half.write_all(&ciphertext_with_tag).await {
+                    error!("Ошибка отправки данных клиенту {}: {}", session_id, e);
+                    break;
+                }
+
+                if let Err(e) = write_half.flush().await {
+                    error!("Ошибка flush для клиента {}: {}", session_id, e);
+                    break;
+                }
+
+                send_counter += 1;
+
+                debug!(
+                    "Отправлен пакет клиенту {}: {} байт",
+                    session_id,
+                    ip_packet.len()
+                );
+            }
+
+            info!("Задача отправки для клиента {} завершена", session_id);
+        });
+
+        // Основной цикл чтения (Client -> TUN)
+        let receive_counter = &mut self.receive_counter;
+        let session_id = self.session_id;
+        let nat_gateway = self.nat_gateway.clone();
+
         loop {
             // Читаем длину пакета (big-endian u32)
-            let packet_len = match self.stream.read_u32().await {
+            let packet_len = match read_half.read_u32().await {
                 Ok(len) => len as usize,
                 Err(e) => {
                     if e.kind() == std::io::ErrorKind::UnexpectedEof {
-                        info!("Клиент {} отключился", self.session_id);
+                        info!("Клиент {} отключился", session_id);
                         break;
                     }
-                    error!("Ошибка чтения длины пакета от {}: {}", self.session_id, e);
+                    error!("Ошибка чтения длины пакета от {}: {}", session_id, e);
                     break;
                 }
             };
@@ -70,15 +182,15 @@ impl ClientHandler {
             if packet_len == 0 || packet_len > 65536 {
                 warn!(
                     "Недопустимый размер пакета от {}: {}",
-                    self.session_id, packet_len
+                    session_id, packet_len
                 );
                 break;
             }
 
             // Читаем пакет: [nonce:12][ciphertext][tag:16]
             let mut packet_buf = vec![0u8; packet_len];
-            if let Err(e) = self.stream.read_exact(&mut packet_buf).await {
-                error!("Ошибка чтения пакета от {}: {}", self.session_id, e);
+            if let Err(e) = read_half.read_exact(&mut packet_buf).await {
+                error!("Ошибка чтения пакета от {}: {}", session_id, e);
                 break;
             }
 
@@ -86,7 +198,7 @@ impl ClientHandler {
             if packet_buf.len() < CHACHA20_NONCE_SIZE + POLY1305_TAG_SIZE {
                 warn!(
                     "Пакет от {} слишком маленький: {}",
-                    self.session_id,
+                    session_id,
                     packet_buf.len()
                 );
                 continue;
@@ -99,14 +211,14 @@ impl ClientHandler {
             let nonce_counter = u64::from_le_bytes(nonce[0..8].try_into().unwrap());
 
             // Проверка порядка пакетов (простая защита от replay)
-            if nonce_counter < self.receive_counter {
+            if nonce_counter < *receive_counter {
                 warn!(
                     "Получен старый пакет от {} (counter: {}, expected: {})",
-                    self.session_id, nonce_counter, self.receive_counter
+                    session_id, nonce_counter, receive_counter
                 );
                 continue;
             }
-            self.receive_counter = nonce_counter + 1;
+            *receive_counter = nonce_counter + 1;
 
             // Ciphertext + tag
             let ciphertext_with_tag = &packet_buf[CHACHA20_NONCE_SIZE..];
@@ -117,7 +229,7 @@ impl ClientHandler {
                 Err(e) => {
                     error!(
                         "Ошибка дешифровки пакета от {}: {}",
-                        self.session_id, e
+                        session_id, e
                     );
                     continue;
                 }
@@ -125,102 +237,30 @@ impl ClientHandler {
 
             debug!(
                 "Получен пакет от {}: {} байт (расшифровано: {})",
-                self.session_id,
+                session_id,
                 packet_buf.len(),
                 plaintext.len()
             );
 
             // Обработка IP пакета
-            if let Err(e) = self.process_ip_packet(&plaintext).await {
-                error!(
-                    "Ошибка обработки IP пакета от {}: {}",
-                    self.session_id, e
-                );
+            if let Some(ref nat) = nat_gateway {
+                let mut nat_lock = nat.write().await;
+                if let Err(e) = nat_lock.route_packet(&plaintext, session_id).await {
+                    error!("Ошибка маршрутизации пакета от {}: {}", session_id, e);
+                }
             }
         }
 
-        info!("Обработчик клиента {} завершён", self.session_id);
+        // Отменяем регистрацию клиента
+        self.client_registry.unregister_client(self.vpn_ip).await;
+
+        // Ожидаем завершения задачи отправки
+        let _ = send_task.await;
+
+        info!("Обработчик клиента {} завершён", session_id);
         Ok(())
     }
 
-    /// Обработать IP пакет
-    async fn process_ip_packet(&mut self, ip_packet: &[u8]) -> Result<()> {
-        if ip_packet.is_empty() {
-            return Ok(());
-        }
-
-        // Проверяем версию IP (первые 4 бита)
-        let version = (ip_packet[0] >> 4) & 0x0F;
-        if version != 4 && version != 6 {
-            warn!(
-                "Неподдерживаемая версия IP от {}: {}",
-                self.session_id, version
-            );
-            return Ok(());
-        }
-
-        debug!(
-            "IP пакет от {}: IPv{}, {} байт",
-            self.session_id,
-            version,
-            ip_packet.len()
-        );
-
-        // TODO: Отправить пакет через NAT gateway в интернет
-        if let Some(nat) = &self.nat_gateway {
-            let mut nat_lock = nat.write().await;
-            if let Err(e) = nat_lock.route_packet(ip_packet, self.session_id).await {
-                error!("Ошибка маршрутизации пакета: {}", e);
-            }
-        } else {
-            warn!("NAT gateway не настроен, пакет отброшен");
-        }
-
-        Ok(())
-    }
-
-    /// Отправить IP пакет клиенту (для обратного трафика)
-    #[allow(dead_code)]
-    pub async fn send_ip_packet(&mut self, ip_packet: &[u8]) -> Result<()> {
-        // Создаём шифровальщик
-        let mut encrypt_cipher = AeadCipher::new(&self.session_key, self.session_id);
-
-        // Пропускаем счётчик до текущего
-        for _ in 0..self.send_counter {
-            let _ = encrypt_cipher.encrypt(&[], &[]);
-        }
-
-        // Шифруем IP пакет
-        let ciphertext_with_tag = encrypt_cipher.encrypt(ip_packet, &[])?;
-        self.send_counter += 1;
-
-        // Строим nonce
-        let mut nonce = [0u8; CHACHA20_NONCE_SIZE];
-        nonce[0..8].copy_from_slice(&self.send_counter.to_le_bytes());
-        nonce[8..12].copy_from_slice(&((self.session_id & 0xFFFFFFFF) as u32).to_le_bytes());
-
-        // Формат: [length:u32][nonce:12][ciphertext+tag]
-        let packet_len = (CHACHA20_NONCE_SIZE + ciphertext_with_tag.len()) as u32;
-
-        // Отправляем длину (big-endian)
-        self.stream.write_u32(packet_len).await?;
-
-        // Отправляем nonce
-        self.stream.write_all(&nonce).await?;
-
-        // Отправляем ciphertext + tag
-        self.stream.write_all(&ciphertext_with_tag).await?;
-
-        self.stream.flush().await?;
-
-        debug!(
-            "Отправлен IP пакет клиенту {}: {} байт",
-            self.session_id,
-            ip_packet.len()
-        );
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]

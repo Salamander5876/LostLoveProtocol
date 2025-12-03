@@ -20,6 +20,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, error, info, warn};
 
 use crate::client_handler::ClientHandler;
+use crate::client_registry::ClientRegistry;
 use crate::config::ServerConfig;
 use crate::nat::NatGateway;
 use crate::router::RouterHandle;
@@ -39,6 +40,8 @@ pub struct LlpListener {
     router: RouterHandle,
     /// NAT gateway для маршрутизации
     nat_gateway: Option<Arc<RwLock<NatGateway>>>,
+    /// Реестр клиентов для обратной маршрутизации
+    client_registry: Arc<ClientRegistry>,
 }
 
 impl LlpListener {
@@ -48,6 +51,7 @@ impl LlpListener {
         session_manager: Arc<RwLock<SessionManager>>,
         router: RouterHandle,
         nat_gateway: Option<Arc<RwLock<NatGateway>>>,
+        client_registry: Arc<ClientRegistry>,
     ) -> Result<Self> {
         let bind_addr = config.bind_address();
         let listener = TcpListener::bind(bind_addr).await?;
@@ -60,6 +64,7 @@ impl LlpListener {
             session_manager,
             router,
             nat_gateway,
+            client_registry,
         })
     }
 
@@ -121,9 +126,10 @@ impl LlpListener {
 
         info!("Клиент зарегистрирован: session_id={}", session_id);
 
-        // Запуск обработчика клиента в отдельной задаче
+        // Запуск обработчика клиента в отдельной задаче с client_registry
         let nat_clone = self.nat_gateway.clone();
-        let handler = ClientHandler::new(session_id, stream, session_key, nat_clone);
+        let registry_clone = Arc::clone(&self.client_registry);
+        let handler = ClientHandler::new(session_id, stream, session_key, nat_clone, registry_clone);
         tokio::spawn(async move {
             if let Err(e) = handler.run().await {
                 error!("Ошибка обработчика клиента {}: {}", session_id, e);
@@ -208,17 +214,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_listener_bind() {
+        use crate::client_registry::ClientRegistry;
+
         let config = Arc::new(ServerConfig::default());
         let session_manager = Arc::new(RwLock::new(SessionManager::new()));
         let router = Router::new(session_manager.clone());
         let router_handle = router.handle();
+        let client_registry = Arc::new(ClientRegistry::new());
 
         // Пробуем забиндить на случайный порт
         let mut test_config = (*config).clone();
         test_config.network.port = 0; // OS выберет свободный порт
         let test_config = Arc::new(test_config);
 
-        let result = LlpListener::bind(test_config, session_manager, router_handle, None).await;
+        let result = LlpListener::bind(test_config, session_manager, router_handle, None, client_registry).await;
         assert!(result.is_ok());
     }
 }

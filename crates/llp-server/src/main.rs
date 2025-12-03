@@ -3,6 +3,7 @@
 //! VPN сервер с поддержкой мимикрии под российские сервисы.
 
 mod client_handler;
+mod client_registry;
 mod config;
 mod listener;
 mod nat;
@@ -10,6 +11,7 @@ mod router;
 mod tun_device;
 
 use clap::Parser;
+use client_registry::ClientRegistry;
 use config::ServerConfig;
 use listener::LlpListener;
 use llp_core::session::SessionManager;
@@ -169,6 +171,9 @@ async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error:
     }
     let nat_gateway = Arc::new(RwLock::new(nat));
 
+    // Создание реестра клиентов для обратной маршрутизации
+    let client_registry = Arc::new(ClientRegistry::new());
+
     // Создание роутера
     let router = Router::new(Arc::clone(&session_manager));
     let router_handle = router.handle();
@@ -178,12 +183,47 @@ async fn run_server(config: Arc<ServerConfig>) -> Result<(), Box<dyn std::error:
         router.run().await;
     });
 
-    // Создание и запуск listener с NAT gateway
+    // Запуск TUN read loop для обратного трафика (Internet -> Client)
+    if let Some(ref tun) = tun_device {
+        let tun_clone = Arc::clone(tun);
+        let registry_clone = Arc::clone(&client_registry);
+
+        tokio::spawn(async move {
+            info!("Запущен TUN read loop для обратного трафика");
+            let mut buffer = vec![0u8; 65536]; // MTU буфер
+
+            loop {
+                let size = {
+                    let mut tun_lock = tun_clone.write().await;
+                    match tun_lock.read_packet(&mut buffer) {
+                        Ok(size) => size,
+                        Err(e) => {
+                            error!("Ошибка чтения из TUN: {}", e);
+                            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                            continue;
+                        }
+                    }
+                };
+
+                if size > 0 {
+                    let packet = &buffer[..size];
+
+                    // Маршрутизируем пакет к клиенту
+                    if let Err(e) = registry_clone.route_to_client(packet).await {
+                        error!("Ошибка маршрутизации пакета к клиенту: {}", e);
+                    }
+                }
+            }
+        });
+    }
+
+    // Создание и запуск listener с NAT gateway и client registry
     let listener = LlpListener::bind(
         Arc::clone(&config),
         session_manager.clone(),
         router_handle,
         Some(nat_gateway.clone()),
+        Arc::clone(&client_registry),
     )
     .await?;
 
