@@ -17,7 +17,7 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 /// Реестр активных клиентов
 pub struct ClientRegistry {
     /// Маппинг VPN IP адресов к каналам для отправки пакетов
-    clients: Arc<RwLock<HashMap<IpAddr, mpsc::UnboundedSender<Bytes>>>>,
+    pub clients: Arc<RwLock<HashMap<IpAddr, mpsc::UnboundedSender<Bytes>>>>,
 }
 
 impl ClientRegistry {

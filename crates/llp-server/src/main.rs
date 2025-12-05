@@ -5,6 +5,7 @@
 mod client_handler;
 mod client_registry;
 mod config;
+mod dpi_bypass;
 mod listener;
 mod nat;
 mod router;
