@@ -93,11 +93,12 @@ impl LlpListener {
 
     /// Запустить listener (основной цикл)
     pub async fn run(self) -> Result<()> {
+        let socket = self.socket.clone();
         let listener = Arc::new(self);
         let mut buf = vec![0u8; 65536]; // Максимальный размер UDP пакета
 
         loop {
-            match listener.socket.recv_from(&mut buf).await {
+            match socket.recv_from(&mut buf).await {
                 Ok((len, peer_addr)) => {
                     if len == 0 {
                         continue;
